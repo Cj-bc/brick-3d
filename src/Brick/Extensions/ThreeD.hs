@@ -1,5 +1,6 @@
 module Brick.Extensions.ThreeD where
 import Tart.Canvas (Canvas)
+import Brick3D
 import Brick
 
 -- | Core widget that displays 3D viewport.
