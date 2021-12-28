@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           Brick 3d
+name:           brick-3d
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/Cj-bc/brick-3D#readme>
 homepage:       https://github.com/Cj-bc/brick-3D#readme
@@ -50,7 +50,7 @@ executable brick3D
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , brick3D
+    , brick-3d
     , brick
     , vty
     , data-default
