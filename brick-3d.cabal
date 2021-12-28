@@ -61,3 +61,17 @@ executable brick3D
     , vector
   default-language: Haskell2010
 
+test-suite test-brick-3d
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+    main-is: Spec.hs
+    other-modules:
+        Test.Brick3D.Type
+    build-depends:
+        base >=4.7 && <5
+      , brick-3d
+      , hspec
+      , QuickCheck
+      , linear
+      , microlens-platform
+    default-language: Haskell2010

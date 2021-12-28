@@ -1,2 +1,6 @@
+import Test.Brick3D.Type
+import Test.Hspec
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = hspec $ do
+  verticesTest
