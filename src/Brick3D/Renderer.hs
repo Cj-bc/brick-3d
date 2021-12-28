@@ -8,14 +8,14 @@ import Brick3D.Type
 render  :: MonadIO m => ThreeDState -> m ThreeDState
 render s = do
   let rasteriezd = render' s
-  screen' <- liftIO . canvasSetMany rasterized $ s^.screen
+  screen' <- liftIO $ canvasSetMany (s^.screen) rasteriezd
   pure $ s&screen.~screen'
 
 -- | Do rendering process other than IO operation (which is done in 'render'
 render' :: ThreeDState -> [((Int, Int), Char, Attr)]
 render' s =
   -- Convert to viewport coordinate
-  let cam = s^.cam
+  let cam = s^.camera
       focalLength = 1/(tan $ (cam^.hFov)/2)
       -- Convert to device coordinate
   -- Geometry Construction
