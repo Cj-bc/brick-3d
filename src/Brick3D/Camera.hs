@@ -1,4 +1,6 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Brick3D.Camera where
+import Lens.Micro.Platform
 import Brick3D.Type
 
 -- | Represents 'Camera' that will be used for rendering

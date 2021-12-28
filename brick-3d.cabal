@@ -40,6 +40,7 @@ library
     , microlens-platform
     , linear
     , data-default
+    , vty
   default-language: Haskell2010
 
 executable brick3D
