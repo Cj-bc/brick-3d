@@ -1,5 +1,7 @@
 module Brick3D.Renderer where
+import Brick3D.State
 import Brick3D.Camera
+import Brick3D.Type
 
 -- | Renders 'ThreeDState' to one 'Tart.Canvas.Canvas',
 -- which will be shown in 'Widget'

@@ -1,4 +1,5 @@
 module Brick3D.Camera where
+import Brick3D.Type
 
 -- | Represents 'Camera' that will be used for rendering
 data Camera = Camera { _position :: Position
