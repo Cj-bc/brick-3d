@@ -25,9 +25,10 @@ source-repository head
 
 library
   exposed-modules:
-      Ascii3d
-  other-modules:
-      Paths_brick3D
+      Brick3D.Camera
+      Brick3D.Type
+      Brick3D.State
+      Brick3D.Renderer
   hs-source-dirs:
       src
   build-depends:
@@ -42,9 +43,7 @@ library
   default-language: Haskell2010
 
 executable brick3D
-  main-is: Ascii3d/Main.hs 
-  other-modules:
-      Paths_brick3D
+  main-is: Main.hs 
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
