@@ -8,6 +8,7 @@ import qualified Data.Vector as V
 import Graphics.Vty.Attributes (Attr, defAttr)
 import Lens.Micro.Platform
 import Linear.V3 (_x, _y, _z)
+import Tart.Canvas
 import Data.Foldable (fold)
 
 -- | Renders 'ThreeDState' to one 'Tart.Canvas.Canvas',
@@ -28,10 +29,11 @@ render' s =
       -- Also, calculate Normal for later use(e.g. shading)
       dcprims :: Vector DCPrimitive
       dcprims = projectPrimitive focalLength <$> V.filter (farNearClip cam) (s^.prims)
+      screen' = s^.screen
   -- Geometry Construction
   -- Shading by using property
   -- Rasterize
-  in fold $ fmap rasterize dcprims
+  in fold $ fmap (rasterize (canvasSize screen')) dcprims
 
 -- | 'True' if given 'Primitive' is not clipped
 -- by far/near plane
@@ -66,17 +68,20 @@ projectVertex focalLength v =
 
 
 -- | Rasterize one 'DCPrimitive'
-rasterize :: DCPrimitive -> [((Int, Int), Char, Attr)]
-rasterize (DCPrimitive shape normal) =
+rasterize :: (Int, Int) -> DCPrimitive -> [((Int, Int), Char, Attr)]
+rasterize (sx, sy) (DCPrimitive shape normal) =
   case shape of
     Point v ->
-      [((round $ v^.v_normal._x, round $ v^.v_normal._y)
+      [(rasterizeVertex v
        , '*'
        , defAttr
        )]
     tri@(Triangle v1 v2 v3) ->
       flip fmap (tri^..vertices) $ \v ->
-                                     ((round $ v^.v_normal._x, round $ v^.v_normal._y)
+                                     (rasterizeVertex v
                                      , 't'
                                      , defAttr
                                      )
+  where
+    rasterizeVertex v = (round $ (fromInteger . toInteger $ sx) * v^.v_normal._x
+                        , round $ (fromInteger . toInteger $ sy) * v^.v_normal._y)
