@@ -5,8 +5,11 @@ import Brick3D.Type
 
 import Data.Vector (Vector)
 import qualified Data.Vector as V
+import Graphics.Vty.Attributes (Attr, defAttr)
 import Lens.Micro.Platform
-import Linear.V3 (_z)
+import Linear.V3 (_x, _y, _z)
+import Data.Foldable (fold)
+
 -- | Renders 'ThreeDState' to one 'Tart.Canvas.Canvas',
 -- which will be shown in 'Widget'
 render  :: MonadIO m => ThreeDState -> m ThreeDState
@@ -28,6 +31,8 @@ render' s =
   -- Geometry Construction
   -- Shading by using property
   -- Rasterize
+  in fold $ fmap rasterize dcprims
+
 -- | 'True' if given 'Primitive' is not clipped
 -- by far/near plane
 -- 
@@ -58,3 +63,20 @@ projectVertex :: Float -> Vertex -> Vertex
 projectVertex focalLength v = 
   let percentage = focalLength/(v^.(v_normal._z))
   in v&v_normal%~(fmap (* percentage))
+
+
+-- | Rasterize one 'DCPrimitive'
+rasterize :: DCPrimitive -> [((Int, Int), Char, Attr)]
+rasterize (DCPrimitive shape normal) =
+  case shape of
+    Point v ->
+      [((round $ v^.v_normal._x, round $ v^.v_normal._y)
+       , '*'
+       , defAttr
+       )]
+    tri@(Triangle v1 v2 v3) ->
+      flip fmap (tri^..vertices) $ \v ->
+                                     ((round $ v^.v_normal._x, round $ v^.v_normal._y)
+                                     , 't'
+                                     , defAttr
+                                     )
