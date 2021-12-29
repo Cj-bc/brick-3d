@@ -31,6 +31,7 @@ eHandler s (VtyEvent (Vty.EvKey (Vty.KChar 'q') [])) = halt s
 eHandler s (VtyEvent (Vty.EvKey (Vty.KChar 'r') [])) = do
   s' <- liftIO $ B3DR.render s
   continue s'
+eHandler s (VtyEvent e) = handle3DEvent e s >>= continue
 eHandler s _ = continue s
 
 main :: IO ()
