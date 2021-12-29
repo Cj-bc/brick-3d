@@ -3,11 +3,12 @@ import Brick3D.State
 import Brick3D.Camera
 import Brick3D.Type
 
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Graphics.Vty.Attributes (Attr, defAttr)
 import Lens.Micro.Platform
-import Linear.V3 (_x, _y, _z)
+import Linear.V3 (V3(..), _x, _y, _z)
 import Tart.Canvas
 import Data.Foldable (fold)
 
