@@ -29,6 +29,7 @@ library
       Brick3D.Type
       Brick3D.State
       Brick3D.Renderer
+      Brick.Extensions.ThreeD.Widgets
   hs-source-dirs:
       src
   build-depends:

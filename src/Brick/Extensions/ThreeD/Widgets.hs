@@ -1,4 +1,4 @@
-module Brick.Extensions.ThreeD where
+module Brick.Extensions.ThreeD.Widgets where
 import Lens.Micro.Platform (view)
 import Tart.Canvas (Canvas, canvasLayersToImage)
 import Brick3D.State
@@ -10,4 +10,3 @@ import Brick
 -- to render image, because it requires IO action.
 threeD :: ThreeDState -> Widget n
 threeD = raw . canvasLayersToImage . pure . view screen
-
