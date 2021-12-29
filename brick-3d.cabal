@@ -67,6 +67,7 @@ test-suite test-brick-3d
     main-is: Spec.hs
     other-modules:
         Test.Brick3D.Type
+        Test.Brick3D.Renderer
     build-depends:
         base >=4.7 && <5
       , brick-3d

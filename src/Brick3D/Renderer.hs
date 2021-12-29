@@ -4,6 +4,7 @@ import Brick3D.Camera
 import Brick3D.Type
 
 import Data.Vector (Vector)
+import qualified Data.Vector as V
 import Lens.Micro.Platform
 import Linear.V3 (_z)
 -- | Renders 'ThreeDState' to one 'Tart.Canvas.Canvas',
@@ -23,10 +24,26 @@ render' s =
       -- Convert to device coordinate
       -- Also, calculate Normal for later use(e.g. shading)
       dcprims :: Vector DCPrimitive
-      dcprims = projectPrimitive focalLength <$> s^.prims
+      dcprims = projectPrimitive focalLength <$> V.filter (farNearClip cam) (s^.prims)
   -- Geometry Construction
   -- Shading by using property
   -- Rasterize
+-- | 'True' if given 'Primitive' is not clipped
+-- by far/near plane
+-- 
+-- far/near平面によって描画されているかを確認する。
+-- x,y方向の確認はしない
+farNearClip :: Camera -> Primitive -> Bool
+farNearClip cam target = let camZ = cam^.position._z :: Float
+                             far = cam^.farClip
+                             near = cam^.nearClip
+                         in all (farNearClipVertex far near camZ) (target^..vertices)
+  where
+    farNearClipVertex :: Float -> Float -> Float -> Vertex -> Bool
+    farNearClipVertex far near camZ v = let tZ   = v^.v_normal._z
+                                        -- 画面手前方向にz軸は向かっているので, 奥側に伸ばしたい際は
+                                        -- 引く。
+                                        in camZ-near >= tZ && tZ >= camZ-far
 
 
 -- | Project one 'Primitive' to device coordinate
