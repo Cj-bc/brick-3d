@@ -17,7 +17,7 @@ import Data.Foldable (fold)
 render  :: MonadIO m => ThreeDState -> m ThreeDState
 render s = do
   let rasteriezd = render' s
-  screen' <- liftIO $ canvasSetMany (s^.screen) rasteriezd
+  screen' <- liftIO $ clearCanvas (s^.screen) >>= flip canvasSetMany rasteriezd
   pure $ s&screen.~screen'
 
 -- | Do rendering process other than IO operation (which is done in 'render'
