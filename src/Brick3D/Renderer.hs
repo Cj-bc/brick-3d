@@ -26,10 +26,12 @@ render' s =
   -- Convert to viewport coordinate
   let cam = s^.camera
       focalLength = 1/(tan $ (cam^.hFov)/2)
+      -- Apply camera transform
+      prims' = applyCameraTransform cam <$> s^.prims
       -- Convert to device coordinate
       -- Also, calculate Normal for later use(e.g. shading)
       dcprims :: Vector DCPrimitive
-      dcprims = projectPrimitive focalLength <$> V.filter (farNearClip cam) (s^.prims)
+      dcprims = projectPrimitive focalLength <$> V.filter (farNearClip cam) prims'
       screen' = s^.screen
   -- Geometry Construction
   -- Shading by using property
@@ -67,6 +69,12 @@ projectVertex focalLength v =
   let percentage = focalLength/(v^.(v_normal._z))
   in v&v_normal%~(fmap (* percentage))
 
+
+applyCameraTransform :: Camera -> Primitive -> Primitive
+applyCameraTransform cam = over (vertices.v_normal) (\n -> n - cam^.position)
+-- applyCameraTransform :: Camera -> Primitive -> (Camera, Primitive)
+-- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.v_normal%~(\n -> n - cam^.position)))
+  
 
 -- | Rasterize one 'DCPrimitive'
 rasterize :: (Int, Int) -> DCPrimitive -> [((Int, Int), Char, Attr)]
