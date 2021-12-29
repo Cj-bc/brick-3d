@@ -83,5 +83,8 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
                                      , defAttr
                                      )
   where
-    rasterizeVertex v = (round $ (fromInteger . toInteger $ sx) * v^.v_normal._x
-                        , round $ (fromInteger . toInteger $ sy) * v^.v_normal._y)
+    halfX = round $ (fromRational.toRational $ sx :: Float)/2
+    halfY = round $ (fromRational.toRational $ sy :: Float)/2
+    moveOriginToCenter (x, y) =  (x+halfX, y+halfY)
+    rasterizeVertex v = moveOriginToCenter (round $ (fromInteger . toInteger $ sx) * v^.v_normal._x
+                                           , round $ (fromInteger . toInteger $ sy) * v^.v_normal._y)
