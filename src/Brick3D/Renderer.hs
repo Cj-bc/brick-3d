@@ -97,8 +97,9 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
     halfX = round $ (fromRational.toRational $ sx :: Float)/2
     halfY = round $ (fromRational.toRational $ sy :: Float)/2
     moveOriginToCenter (x, y) =  (x+halfX, y+halfY)
-    rasterizeVertex v = moveOriginToCenter (round $ (fromInteger . toInteger $ sx) * v^.v_normal._x
-                                           , round $ (fromInteger . toInteger $ sy) * v^.v_normal._y)
+    rasterizeVertex v = moveOriginToCenter ( round $ (fromInteger . toInteger $ sx) * v^.v_normal._x
+                                           , round $ (fromInteger . toInteger $ sy) * v^.v_normal._y
+                                           )
 
 -- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
 --
