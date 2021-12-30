@@ -27,7 +27,7 @@ app = App { appDraw = \s -> [border $ threeD s]
           }
             
 eHandler :: ThreeDState -> BrickEvent AppName AppEvent -> EventM AppName (Next ThreeDState)
-eHandler s (VtyEvent (Vty.EvKey (Vty.KChar 'q') [])) = halt s
+eHandler s (VtyEvent (Vty.EvKey (Vty.KEsc) [])) = halt s
 eHandler s (VtyEvent (Vty.EvKey (Vty.KChar 'r') [])) = do
   s' <- liftIO $ B3DR.render s
   continue s'
