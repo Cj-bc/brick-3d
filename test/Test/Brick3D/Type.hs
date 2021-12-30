@@ -12,9 +12,9 @@ instance Arbitrary Vertex where
   arbitrary = Vertex <$> (V3 <$> arbitrary <*> arbitrary <*> arbitrary)
 
 instance CoArbitrary Vertex where
-  coarbitrary v = coarbitrary (v^.v_normal._x)
-                . coarbitrary (v^.v_normal._y)
-                . coarbitrary (v^.v_normal._z)
+  coarbitrary v = coarbitrary (v^.v_position._x)
+                . coarbitrary (v^.v_position._y)
+                . coarbitrary (v^.v_position._z)
 
 instance Arbitrary Primitive where
   arbitrary = Triangle <$> arbitrary <*> arbitrary <*> arbitrary
