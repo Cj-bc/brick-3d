@@ -11,6 +11,7 @@ import Lens.Micro.Platform
 import Linear.V3 (V3(..), _x, _y, _z)
 import Tart.Canvas
 import Data.Foldable (fold)
+import Linear.Vector ((^*), (^+^))
 
 -- | Renders 'ThreeDState' to one 'Tart.Canvas.Canvas',
 -- which will be shown in 'Widget'
@@ -86,14 +87,24 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
        , defAttr
        )]
     tri@(Triangle v1 v2 v3) ->
-      flip fmap (tri^..vertices) $ \v ->
-                                     (rasterizeVertex v
-                                     , 't'
-                                     , defAttr
-                                     )
+      let outlineVertices = rasterizeLine v1 v3 <> rasterizeLine v1 v2 <> rasterizeLine v2 v3
+      in flip fmap outlineVertices $ \v ->
+                                       (rasterizeVertex v
+                                       , '.'
+                                       , defAttr
+                                       )
   where
     halfX = round $ (fromRational.toRational $ sx :: Float)/2
     halfY = round $ (fromRational.toRational $ sy :: Float)/2
     moveOriginToCenter (x, y) =  (x+halfX, y+halfY)
     rasterizeVertex v = moveOriginToCenter (round $ (fromInteger . toInteger $ sx) * v^.v_normal._x
                                            , round $ (fromInteger . toInteger $ sy) * v^.v_normal._y)
+
+-- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
+--
+-- JP: 与えられた 'begin' と 'end' を両端に持つ線分を構成する 'Vertex' を返します
+rasterizeLine :: Vertex -> Vertex -> [Vertex]
+rasterizeLine begin end = let v = end^.v_normal - begin^.v_normal :: Normal
+                              formula t = (begin^.v_normal) ^+^ (v ^* t)
+                              ts = fmap (/ 500) [0..500] :: [Float]
+                          in fmap (\t -> begin&v_normal.~(formula t)) ts
