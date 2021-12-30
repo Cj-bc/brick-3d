@@ -36,9 +36,13 @@ eHandler s _ = continue s
 
 main :: IO ()
 main = do
-  c <- newCanvas (50, 30)
-  let cam          = Camera (V3 0 0 0) (V3 0 0 0) 60 1 10
-      initialState = ThreeDState cam c [Point . Vertex $ V3 0 0 (-3)
-                                       , Triangle (Vertex $ V3 2 0 (-3)) (Vertex $ V3 2 2 (-3)) (Vertex $ V3 0 2 (-3))
+  c <- newCanvas (300, 100)
+  let cam          = Camera (V3 0 0 0) (V3 0 0 0) 90 0.1 500
+      initialState = ThreeDState cam c [ Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 (-30) 30 (-30))
+                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3   (-30)    30  (-10)) (Vertex $ V3 (-30) 30 (-30))
+                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 30 (-30) (-30))
+                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (30) (-30) (-10)) (Vertex $ V3 30 (-30) (-30))
+                                       , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30 (-30) (-30)) (Vertex $ V3 30 30 (-30))
+                                       , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30    30  (-10)) (Vertex $ V3 30 30 (-30))
                                        ]
   void $ defaultMain app initialState 
