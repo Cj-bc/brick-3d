@@ -1,12 +1,12 @@
 module Brick.Extensions.ThreeD.Widgets where
-import Lens.Micro.Platform (view, (-~), (+~))
+import Lens.Micro.Platform (view, (-~), (+~), (%~))
 import Tart.Canvas (Canvas, canvasLayersToImage)
 import Brick3D.Camera
 import Brick3D.Renderer
 import Brick3D.State
 import Brick hiding (render)
 import Graphics.Vty
-import Linear.V3 (_x, _y, _z)
+import Linear.V3 (V3(..), _x, _y, _z)
 import Control.Monad.IO.Class (liftIO)
 
 -- | Core widget that displays 3D viewport.
@@ -28,4 +28,10 @@ handle3DEvent e s = liftIO $ render (modifier s)
                  EvKey (KChar 'd') [] -> camera.position._x+~1
                  EvKey (KChar 'q') [] -> camera.position._y-~1
                  EvKey (KChar 'e') [] -> camera.position._y+~1
+                 EvKey (KChar 'h') [] -> camera%~(\c -> rotateCamera c (V3         0    (pi/180)        0))
+                 EvKey (KChar 'l') [] -> camera%~(\c -> rotateCamera c (V3         0  (- pi/180)        0))
+                 EvKey (KChar 'k') [] -> camera%~(\c -> rotateCamera c (V3   (pi/180)         0         0))
+                 EvKey (KChar 'j') [] -> camera%~(\c -> rotateCamera c (V3 (- pi/180)         0         0))
+                 EvKey (KChar 'o') [] -> camera%~(\c -> rotateCamera c (V3         0          0   (pi/180)))
+                 EvKey (KChar 'p') [] -> camera%~(\c -> rotateCamera c (V3         0          0 (- pi/180)))
                  _ -> id
