@@ -28,7 +28,7 @@ render' :: ThreeDState -> [((Int, Int), Char, Attr)]
 render' s =
   -- Convert to viewport coordinate
   let cam = s^.camera
-      focalLength = 1/(tan $ (cam^.hFov)/2)
+      focalLength = abs $ 1/(tan $ (cam^.hFov)/2)
       -- Apply camera transform
       prims' = applyCameraTransform cam <$> s^.prims
       -- Convert to device coordinate
@@ -69,14 +69,15 @@ projectPrimitive focalLength prim =
 -- | Project one vertex to device coordinate
 projectVertex :: Float -> Vertex -> Vertex
 projectVertex focalLength v = 
-  let percentage = focalLength/(v^.(v_position._z))
+  let camera2screenVector = -focalLength
+      percentage = camera2screenVector/(v^.(v_position._z))
   in v&v_position%~(fmap (* percentage))
 
 
 applyCameraTransform :: Camera -> Primitive -> Primitive
 applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !* (conv324 n))^._xyz)
   where
-    transformMatrix = mkTransformationMat (cam^.rotation) (cam^.position) 
+    transformMatrix = mkTransformationMat (cam^.rotation) (- cam^.position) 
     conv324 (V3 x y z) = V4 x y z 1
 -- applyCameraTransform :: Camera -> Primitive -> (Camera, Primitive)
 -- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.position%~(\n -> n - cam^.position)))
@@ -103,7 +104,7 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
     halfY = round $ (fromRational.toRational $ sy :: Float)/2
     moveOriginToCenter (x, y) =  (x+halfX, y+halfY)
     rasterizeVertex v = moveOriginToCenter ( round $ (fromInteger . toInteger $ sx) * v^.v_position._x
-                                           , round $ (fromInteger . toInteger $ sy) * v^.v_position._y
+                                           , - (round $ (fromInteger . toInteger $ sy) * v^.v_position._y)
                                            )
 
 -- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
