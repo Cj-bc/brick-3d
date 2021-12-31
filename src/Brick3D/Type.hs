@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Brick3D.Type where
 import Linear.V3 (V3(..), cross)
+import Linear.Matrix (M33(..))
 import Lens.Micro.Platform
 
 -- | Now it's represented as 3-D Vector
@@ -8,7 +9,7 @@ import Lens.Micro.Platform
 -- I'm doing this with reason, I firstly want to try
 -- really basic way that I learnt and change it later.
 type Position = V3 Float
-type Rotation = V3 Float
+type Rotation = M33 Float
 type Normal   = V3 Float
 
 -- | One 'Vertex'

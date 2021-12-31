@@ -8,7 +8,9 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Graphics.Vty.Attributes (Attr, defAttr)
 import Lens.Micro.Platform
-import Linear.V3 (V3(..), _x, _y, _z)
+import Linear.V3 (V3(..), _x, _y, _z, _xyz)
+import Linear.V4 (V4(..))
+import Linear.Matrix (mkTransformationMat, (!*), identity)
 import Tart.Canvas
 import Data.Foldable (fold)
 import Linear.Vector ((^*), (^+^))
@@ -72,7 +74,10 @@ projectVertex focalLength v =
 
 
 applyCameraTransform :: Camera -> Primitive -> Primitive
-applyCameraTransform cam = over (vertices.v_position) (\n -> n - cam^.position)
+applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !* (conv324 n))^._xyz)
+  where
+    transformMatrix = mkTransformationMat (cam^.rotation) (cam^.position) 
+    conv324 (V3 x y z) = V4 x y z 1
 -- applyCameraTransform :: Camera -> Primitive -> (Camera, Primitive)
 -- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.position%~(\n -> n - cam^.position)))
   
