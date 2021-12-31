@@ -38,11 +38,20 @@ main :: IO ()
 main = do
   c <- newCanvas (300, 100)
   let cam          = Camera (V3 0 0 0) (V3 0 0 0) 90 0.1 500
-      initialState = ThreeDState cam c [ Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 (-30) 30 (-30))
-                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3   (-30)    30  (-10)) (Vertex $ V3 (-30) 30 (-30))
-                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 30 (-30) (-30))
-                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (30) (-30) (-10)) (Vertex $ V3 30 (-30) (-30))
-                                       , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30 (-30) (-30)) (Vertex $ V3 30 30 (-30))
-                                       , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30    30  (-10)) (Vertex $ V3 30 30 (-30))
-                                       ]
+      initialState = ThreeDState cam c oneTriangle
   void $ defaultMain app initialState 
+
+-- * Example Set of Primitives
+
+  
+cubeLike :: Vector Primitive
+cubeLike = [ Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 (-30) 30 (-30))
+           , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3   (-30)    30  (-10)) (Vertex $ V3 (-30) 30 (-30))
+           , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 30 (-30) (-30))
+           , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (30) (-30) (-10)) (Vertex $ V3 30 (-30) (-30))
+           , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30 (-30) (-30)) (Vertex $ V3 30 30 (-30))
+           , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30    30  (-10)) (Vertex $ V3 30 30 (-30))
+           ]
+
+oneTriangle :: Vector Primitive
+oneTriangle = [Triangle (Vertex $ V3 (-10) 10 (-30)) (Vertex $ V3 10 10 (-30)) (Vertex $ V3 10 (-10) (-30))]
