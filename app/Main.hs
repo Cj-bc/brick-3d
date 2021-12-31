@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedLists #-}
 module Main where
+import Data.Vector (Vector(..))
 import Linear.V3
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
