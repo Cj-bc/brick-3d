@@ -68,10 +68,13 @@ projectPrimitive focalLength prim =
 
 -- | Project one vertex to device coordinate
 projectVertex :: Float -> Vertex -> Vertex
-projectVertex focalLength v = 
-  let camera2screenVector = -focalLength
-      percentage = camera2screenVector/(v^.(v_position._z))
-  in v&v_position%~(fmap (* percentage))
+projectVertex focalLength v
+  -- Avoid division by zero error
+  | v^.v_position._z == 0 = v&v_position._z.~0
+  | otherwise =
+    let camera2screenVector = -focalLength
+        percentage = camera2screenVector/(v^.(v_position._z))
+    in v&v_position%~(fmap (* percentage))
 
 
 applyCameraTransform :: Camera -> Primitive -> Primitive
