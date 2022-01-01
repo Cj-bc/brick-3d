@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Test.Brick3D.Type where
+module Brick3D.TypeSpec where
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck

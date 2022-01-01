@@ -1,13 +1,14 @@
-module Test.Brick3D.Renderer where
+module Brick3D.RendererSpec where
 
 import Test.Hspec
+import Test.Hspec.QuickCheck
 import Test.QuickCheck
 import Lens.Micro.Platform
-import Linear.V3 (V3(..), _z)
+import Linear.V3 (V3(..), _x, _y, _z)
+import Data.Default (def)
 import Brick3D.Renderer
 import Brick3D.Type
 import Brick3D.Camera
-
 
 rendererTest = do
   describe "farNearClip" $ do
@@ -28,4 +29,3 @@ rendererTest = do
       (arbitrary `suchThat` (\z -> (cam^.position._z)-(cam^.farClip) <= z
                                    && z <= (cam^.position._z)-(cam^.nearClip)))
       $ \z -> farNearClip cam (Point (Vertex $ V3 0 0 z)) `shouldBe` True
-
