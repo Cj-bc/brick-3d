@@ -10,7 +10,11 @@ import Brick3D.Renderer
 import Brick3D.Type
 import Brick3D.Camera
 
-rendererTest = do
+spec = do
+  rendererSpec
+
+  
+rendererSpec = do
   describe "farNearClip" $ do
     let cam = Camera (V3 0.0 0.0 0.0) (V3 0.0 0.0 0.0) 60 1.0 2.0
     

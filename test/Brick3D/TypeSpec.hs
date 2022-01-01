@@ -8,6 +8,8 @@ import Linear.V3 (V3(..), _x, _y, _z)
 import Data.Functor.Compose
 import Lens.Micro.Platform ((^.))
 
+spec = verticesTest
+
 instance Arbitrary Vertex where
   arbitrary = Vertex <$> (V3 <$> arbitrary <*> arbitrary <*> arbitrary)
 
