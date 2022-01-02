@@ -49,8 +49,8 @@ almostEqualVertex (Vertex p1) (Vertex p2) = all (uncurry almostEqual) $ zip (fma
 projectVertexSpec =
   describe "projectVertex" $ do
     context "when vertex is (0,0,z)" $
-        prop "should be (0, 0) on screen coordinate no matter about focalLength" $ \f ->
-            projectVertex f (Vertex $ V3 0 0 1) `shouldBe` (Vertex $ V3 0 0 0)
+        prop "should be (0, 0) on screen coordinate no matter about focalLength" $ \f z ->
+            projectVertex f (Vertex $ V3 0 0 z) `shouldBe` (Vertex $ V3 0 0 f)
 
     context "when vertex is (x, y, 0)" $
         prop "should stay as is" $ \f x y ->
