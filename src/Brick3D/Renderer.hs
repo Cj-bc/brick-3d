@@ -74,7 +74,14 @@ projectVertex focalLength v
   | otherwise =
     let camera2screenVector = -focalLength
         percentage = camera2screenVector/(v^.(v_position._z))
-    in v&v_position%~(fmap (* percentage))
+    in v&v_position%~(fmap (fixMinusZero . (* percentage)))
+  where
+    -- | Convert -0.0 to 0
+    -- It's same in most cases,
+    -- but sometimes causes problem (e.g. hspec test).
+    -- So I replace it with 0.0, which means the same value
+    fixMinusZero n | n == -0.0 = 0
+                   | otherwise = n
 
 
 applyCameraTransform :: Camera -> Primitive -> Primitive
