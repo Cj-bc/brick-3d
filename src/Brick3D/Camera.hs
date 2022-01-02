@@ -17,6 +17,11 @@ makeLenses ''Camera
 
 instance Default Camera where
   def = Camera (V3 0 0 0) identity 60 1 10
+
+-- | Move camera's transform
+moveCamera :: Camera -> Position -> Camera
+moveCamera c diff = c&position+~diff
+
 -- | Rotate Camera
 --
 -- カメラ自身の場所で回すにはどうすれば？？

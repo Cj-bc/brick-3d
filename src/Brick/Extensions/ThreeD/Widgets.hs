@@ -22,16 +22,16 @@ handle3DEvent e s = liftIO $ render (modifier s)
   where
     modifier :: ThreeDState -> ThreeDState
     modifier = case e of
-                 EvKey (KChar 'w') [] -> camera.position._z-~1
-                 EvKey (KChar 's') [] -> camera.position._z+~1
-                 EvKey (KChar 'a') [] -> camera.position._x-~1
-                 EvKey (KChar 'd') [] -> camera.position._x+~1
-                 EvKey (KChar 'q') [] -> camera.position._y-~1
-                 EvKey (KChar 'e') [] -> camera.position._y+~1
-                 EvKey (KChar 'h') [] -> camera%~(\c -> rotateCamera c (V3         0    (pi/180)        0))
-                 EvKey (KChar 'l') [] -> camera%~(\c -> rotateCamera c (V3         0  (- pi/180)        0))
-                 EvKey (KChar 'k') [] -> camera%~(\c -> rotateCamera c (V3   (pi/180)         0         0))
-                 EvKey (KChar 'j') [] -> camera%~(\c -> rotateCamera c (V3 (- pi/180)         0         0))
-                 EvKey (KChar 'o') [] -> camera%~(\c -> rotateCamera c (V3         0          0   (pi/180)))
-                 EvKey (KChar 'p') [] -> camera%~(\c -> rotateCamera c (V3         0          0 (- pi/180)))
+                 EvKey (KChar 'w') [] -> camera%~(flip moveCamera (V3   0    0  (-1)))
+                 EvKey (KChar 's') [] -> camera%~(flip moveCamera (V3   0    0    1))
+                 EvKey (KChar 'a') [] -> camera%~(flip moveCamera (V3 (-1)   0    0))
+                 EvKey (KChar 'd') [] -> camera%~(flip moveCamera (V3   1    0    0))
+                 EvKey (KChar 'q') [] -> camera%~(flip moveCamera (V3   0  (-1)   0))
+                 EvKey (KChar 'e') [] -> camera%~(flip moveCamera (V3   0    1    0))
+                 EvKey (KChar 'h') [] -> camera%~(flip rotateCamera (V3         0    (pi/180)        0))
+                 EvKey (KChar 'l') [] -> camera%~(flip rotateCamera (V3         0  (- pi/180)        0))
+                 EvKey (KChar 'k') [] -> camera%~(flip rotateCamera (V3   (pi/180)         0         0))
+                 EvKey (KChar 'j') [] -> camera%~(flip rotateCamera (V3 (- pi/180)         0         0))
+                 EvKey (KChar 'o') [] -> camera%~(flip rotateCamera (V3         0          0   (pi/180)))
+                 EvKey (KChar 'p') [] -> camera%~(flip rotateCamera (V3         0          0 (- pi/180)))
                  _ -> id
