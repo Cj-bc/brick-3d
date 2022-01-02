@@ -19,6 +19,7 @@ instance Default Camera where
   def = Camera (V3 0 0 0) identity 60 1 10
 -- | Rotate Camera
 --
+-- カメラ自身の場所で回すにはどうすれば？？
 rotateCamera :: Camera -> V3 Float -> Camera
 rotateCamera c diff = c&rotation%~(\r -> rotationMat !*! r)
   where
