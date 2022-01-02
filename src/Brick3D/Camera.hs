@@ -19,14 +19,14 @@ instance Default Camera where
   def = Camera (V3 0 0 0) identity 60 1 10
 
 -- | Move camera's transform
-moveCamera :: Camera -> Position -> Camera
-moveCamera c diff = c&position+~diff
+moveCamera :: Position -> Camera -> Camera
+moveCamera diff = position+~diff
 
 -- | Rotate Camera
 --
 -- カメラ自身の場所で回すにはどうすれば？？
-rotateCamera :: Camera -> V3 Float -> Camera
-rotateCamera c diff = c&rotation%~(\r -> rotationMat !*! r)
+rotateCamera :: V3 Float -> Camera -> Camera
+rotateCamera diff = rotation%~(\r -> rotationMat !*! r)
   where
     -- 回転行列
     rotation_x theta = V3 (V3              1               0           0)

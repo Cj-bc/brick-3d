@@ -77,15 +77,15 @@ applyCameraTransformSpec =
     describe "rotation" $ do
       context "when camera rotate X+ axis" $
         it "should rotate X-" $
-            let (Point result) = applyCameraTransform (rotateCamera def (V3 (pi/2) 0 0)) (Point . Vertex $ V3 1 1 1)
+            let (Point result) = applyCameraTransform (rotateCamera (V3 (pi/2) 0 0) def) (Point . Vertex $ V3 1 1 1)
             in result `almostEqualVertex` (Vertex $ V3 1 1 (-1))
   
       context "when camera rotate Y+ axis" $
         it "should rotate Y-" $
-            let (Point result) = applyCameraTransform (rotateCamera def (V3 0 (pi/2) 0)) (Point . Vertex $ V3 1 1 1)
+            let (Point result) = applyCameraTransform (rotateCamera (V3 0 (pi/2) 0) def) (Point . Vertex $ V3 1 1 1)
             in result `almostEqualVertex` (Vertex $ V3 (-1) 1 1)
 
       context "when camera rotate Z+ axis" $
         it "should rotate Z-" $
-            let (Point result) = applyCameraTransform (rotateCamera def (V3 0 0 (pi/2))) (Point . Vertex $ V3 1 1 1)
+            let (Point result) = applyCameraTransform (rotateCamera (V3 0 0 (pi/2)) def) (Point . Vertex $ V3 1 1 1)
             in result `almostEqualVertex` (Vertex $ V3 1 (-1) 1)
