@@ -8,7 +8,9 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Graphics.Vty.Attributes (Attr, defAttr)
 import Lens.Micro.Platform
-import Linear.V3 (V3(..), _x, _y, _z)
+import Linear.V3 (V3(..), _x, _y, _z, _xyz)
+import Linear.V4 (V4(..))
+import Linear.Matrix (mkTransformationMat, (!*), identity)
 import Tart.Canvas
 import Data.Foldable (fold)
 import Linear.Vector ((^*), (^+^))
@@ -26,7 +28,7 @@ render' :: ThreeDState -> [((Int, Int), Char, Attr)]
 render' s =
   -- Convert to viewport coordinate
   let cam = s^.camera
-      focalLength = 1/(tan $ (cam^.hFov)/2)
+      focalLength = abs $ 1/(tan $ (cam^.hFov)/2)
       -- Apply camera transform
       prims' = applyCameraTransform cam <$> s^.prims
       -- Convert to device coordinate
@@ -51,7 +53,7 @@ farNearClip cam target = let camZ = cam^.position._z :: Float
                          in all (farNearClipVertex far near camZ) (target^..vertices)
   where
     farNearClipVertex :: Float -> Float -> Float -> Vertex -> Bool
-    farNearClipVertex far near camZ v = let tZ   = v^.v_normal._z
+    farNearClipVertex far near camZ v = let tZ   = v^.v_position._z
                                         -- 画面手前方向にz軸は向かっているので, 奥側に伸ばしたい際は
                                         -- 引く。
                                         in camZ-near >= tZ && tZ >= camZ-far
@@ -66,15 +68,29 @@ projectPrimitive focalLength prim =
 
 -- | Project one vertex to device coordinate
 projectVertex :: Float -> Vertex -> Vertex
-projectVertex focalLength v = 
-  let percentage = focalLength/(v^.(v_normal._z))
-  in v&v_normal%~(fmap (* percentage))
+projectVertex focalLength v
+  -- Avoid division by zero error
+  | v^.v_position._z == 0 = v&v_position._z.~0
+  | otherwise =
+    let camera2screenVector = -focalLength
+        percentage = camera2screenVector/(v^.(v_position._z))
+    in v&v_position%~(fmap (fixMinusZero . (* percentage)))
+  where
+    -- | Convert -0.0 to 0
+    -- It's same in most cases,
+    -- but sometimes causes problem (e.g. hspec test).
+    -- So I replace it with 0.0, which means the same value
+    fixMinusZero n | n == -0.0 = 0
+                   | otherwise = n
 
 
 applyCameraTransform :: Camera -> Primitive -> Primitive
-applyCameraTransform cam = over (vertices.v_normal) (\n -> n - cam^.position)
+applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !* (conv324 n))^._xyz)
+  where
+    transformMatrix = mkTransformationMat (cam^.rotation) (- cam^.position) 
+    conv324 (V3 x y z) = V4 x y z 1
 -- applyCameraTransform :: Camera -> Primitive -> (Camera, Primitive)
--- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.v_normal%~(\n -> n - cam^.position)))
+-- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.position%~(\n -> n - cam^.position)))
   
 
 -- | Rasterize one 'DCPrimitive'
@@ -97,15 +113,15 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
     halfX = round $ (fromRational.toRational $ sx :: Float)/2
     halfY = round $ (fromRational.toRational $ sy :: Float)/2
     moveOriginToCenter (x, y) =  (x+halfX, y+halfY)
-    rasterizeVertex v = moveOriginToCenter ( round $ (fromInteger . toInteger $ sx) * v^.v_normal._x
-                                           , round $ (fromInteger . toInteger $ sy) * v^.v_normal._y
+    rasterizeVertex v = moveOriginToCenter ( round $ (fromInteger . toInteger $ sx) * v^.v_position._x
+                                           , - (round $ (fromInteger . toInteger $ sy) * v^.v_position._y)
                                            )
 
 -- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
 --
 -- JP: 与えられた 'begin' と 'end' を両端に持つ線分を構成する 'Vertex' を返します
 rasterizeLine :: Vertex -> Vertex -> [Vertex]
-rasterizeLine begin end = let v = end^.v_normal - begin^.v_normal :: Normal
-                              formula t = (begin^.v_normal) ^+^ (v ^* t)
+rasterizeLine begin end = let v = end^.v_position - begin^.v_position :: Normal
+                              formula t = (begin^.v_position) ^+^ (v ^* t)
                               ts = fmap (/ 500) [0..500] :: [Float]
-                          in fmap (\t -> begin&v_normal.~(formula t)) ts
+                          in fmap (\t -> begin&v_position.~(formula t)) ts

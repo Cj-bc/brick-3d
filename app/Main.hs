@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedLists #-}
 module Main where
+import Data.Vector (Vector(..))
 import Linear.V3
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
+import Data.Default (def)
 import qualified Graphics.Vty as Vty
 import Brick
 import Brick.Widgets.Border
@@ -37,12 +39,21 @@ eHandler s _ = continue s
 main :: IO ()
 main = do
   c <- newCanvas (300, 100)
-  let cam          = Camera (V3 0 0 0) (V3 0 0 0) 90 0.1 500
-      initialState = ThreeDState cam c [ Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 (-30) 30 (-30))
-                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3   (-30)    30  (-10)) (Vertex $ V3 (-30) 30 (-30))
-                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 30 (-30) (-30))
-                                       , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (30) (-30) (-10)) (Vertex $ V3 30 (-30) (-30))
-                                       , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30 (-30) (-30)) (Vertex $ V3 30 30 (-30))
-                                       , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30    30  (-10)) (Vertex $ V3 30 30 (-30))
-                                       ]
+  let cam          = def { _hFov = 90, _nearClip = 0.1, _farClip = 500 }
+      initialState = ThreeDState cam c oneTriangle
   void $ defaultMain app initialState 
+
+-- * Example Set of Primitives
+
+  
+cubeLike :: Vector Primitive
+cubeLike = [ Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 (-30) 30 (-30))
+           , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3   (-30)    30  (-10)) (Vertex $ V3 (-30) 30 (-30))
+           , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (-30) (-30) (-30)) (Vertex $ V3 30 (-30) (-30))
+           , Triangle (Vertex $ V3 (-30) (-30) (-10)) (Vertex $ V3 (30) (-30) (-10)) (Vertex $ V3 30 (-30) (-30))
+           , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30 (-30) (-30)) (Vertex $ V3 30 30 (-30))
+           , Triangle (Vertex $ V3 30 (-30) (-10)) (Vertex $ V3 30    30  (-10)) (Vertex $ V3 30 30 (-30))
+           ]
+
+oneTriangle :: Vector Primitive
+oneTriangle = [Triangle (Vertex $ V3 (-10) 10 (-30)) (Vertex $ V3 10 10 (-30)) (Vertex $ V3 10 (-10) (-30))]

@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Test.Brick3D.Type where
+module Brick3D.TypeSpec where
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
@@ -8,13 +8,15 @@ import Linear.V3 (V3(..), _x, _y, _z)
 import Data.Functor.Compose
 import Lens.Micro.Platform ((^.))
 
+spec = verticesTest
+
 instance Arbitrary Vertex where
   arbitrary = Vertex <$> (V3 <$> arbitrary <*> arbitrary <*> arbitrary)
 
 instance CoArbitrary Vertex where
-  coarbitrary v = coarbitrary (v^.v_normal._x)
-                . coarbitrary (v^.v_normal._y)
-                . coarbitrary (v^.v_normal._z)
+  coarbitrary v = coarbitrary (v^.v_position._x)
+                . coarbitrary (v^.v_position._y)
+                . coarbitrary (v^.v_position._z)
 
 instance Arbitrary Primitive where
   arbitrary = Triangle <$> arbitrary <*> arbitrary <*> arbitrary
