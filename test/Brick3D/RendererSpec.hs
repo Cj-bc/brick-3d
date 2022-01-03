@@ -4,6 +4,7 @@ import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 import Lens.Micro.Platform
+import Linear.V2 (V2(..))
 import Linear.V3 (V3(..), _x, _y, _z)
 import Data.Default (def)
 import Brick3D.Renderer
@@ -50,11 +51,11 @@ projectVertexSpec =
   describe "projectVertex" $ do
     context "when vertex is (0,0,z)" $
         prop "should be (0, 0) on screen coordinate no matter about focalLength" $ \f z ->
-            projectVertex f (Vertex $ V3 0 0 z) `shouldBe` (Vertex $ V3 0 0 f)
+            projectVertex f (Vertex $ V3 0 0 z) `shouldBe` (DCVertex (V2 0 0) f)
 
     context "when vertex is (x, y, 0)" $
         prop "should stay as is" $ \f x y ->
-            projectVertex f (Vertex $ V3 x y 0) `shouldBe` (Vertex $ V3 x y 0)
+            projectVertex f (Vertex $ V3 x y 0) `shouldBe` (DCVertex (V2 x y) 0)
 
     -- it "be 1 at" $ projectVertex f (Vertex $ V3 0 0 0)
 
