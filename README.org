@@ -1,8 +1,0 @@
-* brick-3d -- a [[https://github.com/jtdaugherty/brick][Brick]] widget that renders 3D world
-
-  This offers a widget that can render 3D scene on top of
-  [[https://github.com/jtdaugherty/brick][jtdaugherty/brick]] haskell TUI library.  
-
-  [[./resources/thumbnail.gif]]
-
-  Still under development, documents will be written later.
