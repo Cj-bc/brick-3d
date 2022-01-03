@@ -8,6 +8,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Graphics.Vty.Attributes (Attr, defAttr)
 import Lens.Micro.Platform
+import Linear.V2 (V2(..))
 import Linear.V3 (V3(..), _x, _y, _z, _xyz)
 import Linear.V4 (V4(..))
 import Linear.Matrix (mkTransformationMat, (!*), identity)
@@ -62,19 +63,17 @@ farNearClip cam target = let camZ = cam^.position._z :: Float
 -- | Project one 'Primitive' to device coordinate
 projectPrimitive :: Float -> Primitive -> DCPrimitive
 projectPrimitive focalLength prim =
-  let prim' = over (vertices) (projectVertex focalLength) prim
-      norm = calcNormal prim
-  in DCPrimitive prim' norm
+  toDCPrimitive (projectVertex focalLength) prim
 
 -- | Project one vertex to device coordinate
-projectVertex :: Float -> Vertex -> Vertex
+projectVertex :: Float -> Vertex -> DCVertex
 projectVertex focalLength v
   -- Avoid division by zero error
-  | v^.v_position._z == 0 = v&v_position._z.~0
+  | v^.v_position._z == 0 = DCVertex (V2 (v^.v_position._x) (v^.v_position._y)) (-focalLength)
   | otherwise =
     let camera2screenVector = -focalLength
         percentage = camera2screenVector/(v^.(v_position._z))
-    in v&v_position%~(fmap (fixMinusZero . (* percentage)))
+    in fromVertex $ v&v_position%~(fmap (fixMinusZero . (* percentage)))
   where
     -- | Convert -0.0 to 0
     -- It's same in most cases,
@@ -113,15 +112,15 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
     halfX = round $ (fromRational.toRational $ sx :: Float)/2
     halfY = round $ (fromRational.toRational $ sy :: Float)/2
     moveOriginToCenter (x, y) =  (x+halfX, y+halfY)
-    rasterizeVertex v = moveOriginToCenter ( round $ (fromInteger . toInteger $ sx) * v^.v_position._x
-                                           , - (round $ (fromInteger . toInteger $ sy) * v^.v_position._y)
+    rasterizeVertex v = moveOriginToCenter ( round $ (fromInteger . toInteger $ sx) * v^.dcv_position._x
+                                           , - (round $ (fromInteger . toInteger $ sy) * v^.dcv_position._y)
                                            )
 
 -- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
 --
 -- JP: 与えられた 'begin' と 'end' を両端に持つ線分を構成する 'Vertex' を返します
-rasterizeLine :: Vertex -> Vertex -> [Vertex]
-rasterizeLine begin end = let v = end^.v_position - begin^.v_position :: Normal
-                              formula t = (begin^.v_position) ^+^ (v ^* t)
+rasterizeLine :: DCVertex -> DCVertex -> [DCVertex]
+rasterizeLine begin end = let v = end^.dcv_position - begin^.dcv_position :: V2 Float
+                              formula t = (begin^.dcv_position) ^+^ (v ^* t)
                               ts = fmap (/ 500) [0..500] :: [Float]
-                          in fmap (\t -> begin&v_position.~(formula t)) ts
+                          in fmap (\t -> begin&dcv_position.~(formula t)) ts
