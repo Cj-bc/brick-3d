@@ -1,0 +1,254 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Brick.Extensions.ThreeD.Widgets</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Lens.Micro.Platform</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">view</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(-~)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(+~)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(%~)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-3"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Tart.Canvas</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Canvas</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">canvasLayersToImage</span></span><span class="hs-special">)</span><span>
+</span><span id="line-4"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Brick3D.Camera.html"><span class="hs-identifier">Brick3D.Camera</span></a></span><span>
+</span><span id="line-5"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Brick3D.Renderer.html"><span class="hs-identifier">Brick3D.Renderer</span></a></span><span>
+</span><span id="line-6"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Brick3D.State.html"><span class="hs-identifier">Brick3D.State</span></a></span><span>
+</span><span id="line-7"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Brick</span></span><span> </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">render</span></span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Graphics.Vty</span></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.V3</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">V3</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_x</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_y</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_z</span></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">liftIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span>
+</span><span id="line-12"></span><span class="hs-comment">-- | Core widget that displays 3D viewport.</span><span>
+</span><span id="line-13"></span><span class="hs-comment">--</span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- You *should* call 'render' function in 'EventM'</span><span>
+</span><span id="line-15"></span><span class="hs-comment">-- to render image, because it requires IO action.</span><span>
+</span><span id="line-16"></span><span id="local-6989586621679114727"><span class="annot"><a href="Brick.Extensions.ThreeD.Widgets.html#threeD"><span class="hs-identifier hs-type">threeD</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.State.html#ThreeDState"><span class="hs-identifier hs-type">ThreeDState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Widget</span></span><span> </span><span class="annot"><a href="#local-6989586621679114727"><span class="hs-identifier hs-type">n</span></a></span></span><span>
+</span><span id="line-17"></span><span id="threeD"><span class="annot"><span class="annottext">threeD :: ThreeDState -&gt; Widget n
+</span><a href="Brick.Extensions.ThreeD.Widgets.html#threeD"><span class="hs-identifier hs-var hs-var">threeD</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Image -&gt; Widget n
+forall n. Image -&gt; Widget n
+</span><span class="hs-identifier hs-var">raw</span></span><span> </span><span class="annot"><span class="annottext">(Image -&gt; Widget n)
+-&gt; (ThreeDState -&gt; Image) -&gt; ThreeDState -&gt; Widget n
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Canvas] -&gt; Image
+</span><span class="hs-identifier hs-var">canvasLayersToImage</span></span><span> </span><span class="annot"><span class="annottext">([Canvas] -&gt; Image)
+-&gt; (ThreeDState -&gt; [Canvas]) -&gt; ThreeDState -&gt; Image
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Canvas -&gt; [Canvas]
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Canvas -&gt; [Canvas])
+-&gt; (ThreeDState -&gt; Canvas) -&gt; ThreeDState -&gt; [Canvas]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Getting Canvas ThreeDState Canvas -&gt; ThreeDState -&gt; Canvas
+forall s (m :: * -&gt; *) a. MonadReader s m =&gt; Getting a s a -&gt; m a
+</span><span class="hs-identifier hs-var">view</span></span><span> </span><span class="annot"><span class="annottext">Getting Canvas ThreeDState Canvas
+Lens' ThreeDState Canvas
+</span><a href="Brick3D.State.html#screen"><span class="hs-identifier hs-var">screen</span></a></span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span id="local-6989586621679114722"><span class="annot"><a href="Brick.Extensions.ThreeD.Widgets.html#handle3DEvent"><span class="hs-identifier hs-type">handle3DEvent</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Event</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.State.html#ThreeDState"><span class="hs-identifier hs-type">ThreeDState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">EventM</span></span><span> </span><span class="annot"><a href="#local-6989586621679114722"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="annot"><a href="Brick3D.State.html#ThreeDState"><span class="hs-identifier hs-type">ThreeDState</span></a></span></span><span>
+</span><span id="line-21"></span><span id="handle3DEvent"><span class="annot"><span class="annottext">handle3DEvent :: Event -&gt; ThreeDState -&gt; EventM n ThreeDState
+</span><a href="Brick.Extensions.ThreeD.Widgets.html#handle3DEvent"><span class="hs-identifier hs-var hs-var">handle3DEvent</span></a></span></span><span> </span><span id="local-6989586621679114720"><span class="annot"><span class="annottext">Event
+</span><a href="#local-6989586621679114720"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span id="local-6989586621679114719"><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114719"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO ThreeDState -&gt; EventM n ThreeDState
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO ThreeDState -&gt; EventM n ThreeDState)
+-&gt; IO ThreeDState -&gt; EventM n ThreeDState
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ThreeDState -&gt; IO ThreeDState
+forall (m :: * -&gt; *). MonadIO m =&gt; ThreeDState -&gt; m ThreeDState
+</span><a href="Brick3D.Renderer.html#render"><span class="hs-identifier hs-var">render</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ThreeDState -&gt; ThreeDState
+</span><a href="#local-6989586621679114717"><span class="hs-identifier hs-var">modifier</span></a></span><span> </span><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114719"><span class="hs-identifier hs-var">s</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="#local-6989586621679114717"><span class="hs-identifier hs-type">modifier</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.State.html#ThreeDState"><span class="hs-identifier hs-type">ThreeDState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.State.html#ThreeDState"><span class="hs-identifier hs-type">ThreeDState</span></a></span><span>
+</span><span id="line-24"></span><span>    </span><span id="local-6989586621679114717"><span class="annot"><span class="annottext">modifier :: ThreeDState -&gt; ThreeDState
+</span><a href="#local-6989586621679114717"><span class="hs-identifier hs-var hs-var">modifier</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Event
+</span><a href="#local-6989586621679114720"><span class="hs-identifier hs-var">e</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-25"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'w'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-var">moveCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>   </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>    </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>  </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'s'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-var">moveCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>   </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>    </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>    </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'a'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-var">moveCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>   </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>    </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'d'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-var">moveCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>   </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">1</span></span><span>    </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>    </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'q'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-var">moveCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>   </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>  </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>   </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'e'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-var">moveCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>   </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>    </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">1</span></span><span>    </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'h'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-var">rotateCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>         </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float
+forall a. Floating a =&gt; a
+</span><span class="hs-identifier hs-var">pi</span></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">180</span></span><span class="hs-special">)</span><span>        </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'l'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-var">rotateCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>         </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>  </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span> </span><span class="annot"><span class="annottext">Float
+forall a. Floating a =&gt; a
+</span><span class="hs-identifier hs-var">pi</span></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">180</span></span><span class="hs-special">)</span><span>        </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'k'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-var">rotateCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float
+forall a. Floating a =&gt; a
+</span><span class="hs-identifier hs-var">pi</span></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">180</span></span><span class="hs-special">)</span><span>         </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>         </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'j'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-var">rotateCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span> </span><span class="annot"><span class="annottext">Float
+forall a. Floating a =&gt; a
+</span><span class="hs-identifier hs-var">pi</span></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">180</span></span><span class="hs-special">)</span><span>         </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>         </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'o'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-var">rotateCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>         </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>          </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>   </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float
+forall a. Floating a =&gt; a
+</span><span class="hs-identifier hs-var">pi</span></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">180</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span>                 </span><span class="annot"><span class="hs-identifier hs-type">EvKey</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">KChar</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'p'</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Camera -&gt; Identity Camera) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span class="annot"><span class="annottext">((Camera -&gt; Identity Camera)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; (Camera -&gt; Camera) -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; Camera -&gt; Camera
+</span><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-var">rotateCamera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
+forall a. a -&gt; a -&gt; a -&gt; V3 a
+</span><span class="hs-identifier hs-var">V3</span></span><span>         </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>          </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span> </span><span class="annot"><span class="annottext">Float
+forall a. Floating a =&gt; a
+</span><span class="hs-identifier hs-var">pi</span></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">180</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>                 </span><span class="annot"><span class="annottext">Event
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ThreeDState -&gt; ThreeDState
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-38"></span></pre></body></html>

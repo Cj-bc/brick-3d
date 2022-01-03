@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span id="%24con2tag_GjvY7pGPld3FC2c5X1T7or"></span><span class="hs-pragma">{-# LANGUAGE TemplateHaskell #-}</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Brick3D.Type</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-3"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.V3</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">V3</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">cross</span></span><span class="hs-special">)</span><span>
+</span><span id="line-4"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.Matrix</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">M33</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-5"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Lens.Micro.Platform</span></span><span>
+</span><span id="line-6"></span><span>
+</span><span id="line-7"></span><span class="hs-keyword">type</span><span> </span><span id="Position"><span class="annot"><a href="Brick3D.Type.html#Position"><span class="hs-identifier hs-var">Position</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V3</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">type</span><span> </span><span id="Rotation"><span class="annot"><a href="Brick3D.Type.html#Rotation"><span class="hs-identifier hs-var">Rotation</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">M33</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">type</span><span> </span><span id="Normal"><span class="annot"><a href="Brick3D.Type.html#Normal"><span class="hs-identifier hs-var">Normal</span></a></span></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V3</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span>
+</span><span id="line-10"></span><span>
+</span><span id="line-11"></span><span class="hs-comment">-- | One 'Vertex'</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">data</span><span> </span><span id="Vertex"><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-var">Vertex</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Vertex"><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-var">Vertex</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="_v_position"><span class="annot"><span class="annottext">Vertex -&gt; Position
+</span><a href="Brick3D.Type.html#_v_position"><span class="hs-identifier hs-var hs-var">_v_position</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Position"><span class="hs-identifier hs-type">Position</span></a></span><span>
+</span><span id="line-13"></span><span>                     </span><span class="hs-comment">-- We might add more information as Vertex attribute</span><span>
+</span><span id="line-14"></span><span>                     </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114354"><span id="local-6989586621679114356"><span id="local-6989586621679114358"><span class="annot"><span class="annottext">Int -&gt; Vertex -&gt; ShowS
+[Vertex] -&gt; ShowS
+Vertex -&gt; String
+(Int -&gt; Vertex -&gt; ShowS)
+-&gt; (Vertex -&gt; String) -&gt; ([Vertex] -&gt; ShowS) -&gt; Show Vertex
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Vertex] -&gt; ShowS
+$cshowList :: [Vertex] -&gt; ShowS
+show :: Vertex -&gt; String
+$cshow :: Vertex -&gt; String
+showsPrec :: Int -&gt; Vertex -&gt; ShowS
+$cshowsPrec :: Int -&gt; Vertex -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114349"><span id="local-6989586621679114351"><span class="annot"><span class="annottext">Vertex -&gt; Vertex -&gt; Bool
+(Vertex -&gt; Vertex -&gt; Bool)
+-&gt; (Vertex -&gt; Vertex -&gt; Bool) -&gt; Eq Vertex
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Vertex -&gt; Vertex -&gt; Bool
+$c/= :: Vertex -&gt; Vertex -&gt; Bool
+== :: Vertex -&gt; Vertex -&gt; Bool
+$c== :: Vertex -&gt; Vertex -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114333"><span id="local-6989586621679114335"><span id="local-6989586621679114337"><span id="local-6989586621679114339"><span id="local-6989586621679114341"><span id="local-6989586621679114343"><span id="local-6989586621679114345"><span class="annot"><span class="annottext">Eq Vertex
+Eq Vertex
+-&gt; (Vertex -&gt; Vertex -&gt; Ordering)
+-&gt; (Vertex -&gt; Vertex -&gt; Bool)
+-&gt; (Vertex -&gt; Vertex -&gt; Bool)
+-&gt; (Vertex -&gt; Vertex -&gt; Bool)
+-&gt; (Vertex -&gt; Vertex -&gt; Bool)
+-&gt; (Vertex -&gt; Vertex -&gt; Vertex)
+-&gt; (Vertex -&gt; Vertex -&gt; Vertex)
+-&gt; Ord Vertex
+Vertex -&gt; Vertex -&gt; Bool
+Vertex -&gt; Vertex -&gt; Ordering
+Vertex -&gt; Vertex -&gt; Vertex
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+min :: Vertex -&gt; Vertex -&gt; Vertex
+$cmin :: Vertex -&gt; Vertex -&gt; Vertex
+max :: Vertex -&gt; Vertex -&gt; Vertex
+$cmax :: Vertex -&gt; Vertex -&gt; Vertex
+&gt;= :: Vertex -&gt; Vertex -&gt; Bool
+$c&gt;= :: Vertex -&gt; Vertex -&gt; Bool
+&gt; :: Vertex -&gt; Vertex -&gt; Bool
+$c&gt; :: Vertex -&gt; Vertex -&gt; Bool
+&lt;= :: Vertex -&gt; Vertex -&gt; Bool
+$c&lt;= :: Vertex -&gt; Vertex -&gt; Bool
+&lt; :: Vertex -&gt; Vertex -&gt; Bool
+$c&lt; :: Vertex -&gt; Vertex -&gt; Bool
+compare :: Vertex -&gt; Vertex -&gt; Ordering
+$ccompare :: Vertex -&gt; Vertex -&gt; Ordering
+$cp1Ord :: Eq Vertex
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span id="v_position"><span class="hs-identifier">makeLenses</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Vertex</span></span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">data</span><span> </span><span id="Primitive"><span class="annot"><a href="Brick3D.Type.html#Primitive"><span class="hs-identifier hs-var">Primitive</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Point"><span class="annot"><a href="Brick3D.Type.html#Point"><span class="hs-identifier hs-var">Point</span></a></span></span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span>
+</span><span id="line-18"></span><span>               </span><span class="hs-comment">-- | Line (Vector Vertex)</span><span>
+</span><span id="line-19"></span><span>               </span><span class="hs-glyph">|</span><span> </span><span id="Triangle"><span class="annot"><a href="Brick3D.Type.html#Triangle"><span class="hs-identifier hs-var">Triangle</span></a></span></span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span>
+</span><span id="line-20"></span><span>               </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114323"><span id="local-6989586621679114325"><span id="local-6989586621679114327"><span class="annot"><span class="annottext">Int -&gt; Primitive -&gt; ShowS
+[Primitive] -&gt; ShowS
+Primitive -&gt; String
+(Int -&gt; Primitive -&gt; ShowS)
+-&gt; (Primitive -&gt; String)
+-&gt; ([Primitive] -&gt; ShowS)
+-&gt; Show Primitive
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+showList :: [Primitive] -&gt; ShowS
+$cshowList :: [Primitive] -&gt; ShowS
+show :: Primitive -&gt; String
+$cshow :: Primitive -&gt; String
+showsPrec :: Int -&gt; Primitive -&gt; ShowS
+$cshowsPrec :: Int -&gt; Primitive -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114319"><span id="local-6989586621679114321"><span class="annot"><span class="annottext">Primitive -&gt; Primitive -&gt; Bool
+(Primitive -&gt; Primitive -&gt; Bool)
+-&gt; (Primitive -&gt; Primitive -&gt; Bool) -&gt; Eq Primitive
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+/= :: Primitive -&gt; Primitive -&gt; Bool
+$c/= :: Primitive -&gt; Primitive -&gt; Bool
+== :: Primitive -&gt; Primitive -&gt; Bool
+$c== :: Primitive -&gt; Primitive -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114304"><span id="local-6989586621679114306"><span id="local-6989586621679114308"><span id="local-6989586621679114310"><span id="local-6989586621679114312"><span id="local-6989586621679114314"><span id="local-6989586621679114316"><span class="annot"><span class="annottext">Eq Primitive
+Eq Primitive
+-&gt; (Primitive -&gt; Primitive -&gt; Ordering)
+-&gt; (Primitive -&gt; Primitive -&gt; Bool)
+-&gt; (Primitive -&gt; Primitive -&gt; Bool)
+-&gt; (Primitive -&gt; Primitive -&gt; Bool)
+-&gt; (Primitive -&gt; Primitive -&gt; Bool)
+-&gt; (Primitive -&gt; Primitive -&gt; Primitive)
+-&gt; (Primitive -&gt; Primitive -&gt; Primitive)
+-&gt; Ord Primitive
+Primitive -&gt; Primitive -&gt; Bool
+Primitive -&gt; Primitive -&gt; Ordering
+Primitive -&gt; Primitive -&gt; Primitive
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+min :: Primitive -&gt; Primitive -&gt; Primitive
+$cmin :: Primitive -&gt; Primitive -&gt; Primitive
+max :: Primitive -&gt; Primitive -&gt; Primitive
+$cmax :: Primitive -&gt; Primitive -&gt; Primitive
+&gt;= :: Primitive -&gt; Primitive -&gt; Bool
+$c&gt;= :: Primitive -&gt; Primitive -&gt; Bool
+&gt; :: Primitive -&gt; Primitive -&gt; Bool
+$c&gt; :: Primitive -&gt; Primitive -&gt; Bool
+&lt;= :: Primitive -&gt; Primitive -&gt; Bool
+$c&lt;= :: Primitive -&gt; Primitive -&gt; Bool
+&lt; :: Primitive -&gt; Primitive -&gt; Bool
+$c&lt; :: Primitive -&gt; Primitive -&gt; Bool
+compare :: Primitive -&gt; Primitive -&gt; Ordering
+$ccompare :: Primitive -&gt; Primitive -&gt; Ordering
+$cp1Ord :: Eq Primitive
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-identifier">makeLenses</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Primitive</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-comment">-- | Calculate 'Normal' of 'Primitive'</span><span>
+</span><span id="line-24"></span><span class="annot"><a href="Brick3D.Type.html#calcNormal"><span class="hs-identifier hs-type">calcNormal</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Primitive"><span class="hs-identifier hs-type">Primitive</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Normal"><span class="hs-identifier hs-type">Normal</span></a></span><span>
+</span><span id="line-25"></span><span id="calcNormal"><span class="annot"><span class="annottext">calcNormal :: Primitive -&gt; Position
+</span><a href="Brick3D.Type.html#calcNormal"><span class="hs-identifier hs-var hs-var">calcNormal</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#Point"><span class="hs-identifier hs-type">Point</span></a></span><span> </span><span id="local-6989586621679114302"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114302"><span class="hs-identifier hs-var">p</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114302"><span class="hs-identifier hs-var">p</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Position Vertex Position -&gt; Position
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Position Vertex Position
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span>
+</span><span id="line-26"></span><span class="annot"><a href="Brick3D.Type.html#calcNormal"><span class="hs-identifier hs-var">calcNormal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#Triangle"><span class="hs-identifier hs-type">Triangle</span></a></span><span> </span><span id="local-6989586621679114300"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114300"><span class="hs-identifier hs-var">v1</span></a></span></span><span> </span><span id="local-6989586621679114299"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114299"><span class="hs-identifier hs-var">v2</span></a></span></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114300"><span class="hs-identifier hs-var">v1</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Position Vertex Position -&gt; Position
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Position Vertex Position
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Position -&gt; Position -&gt; Position
+forall a. Num a =&gt; V3 a -&gt; V3 a -&gt; V3 a
+</span><span class="hs-operator hs-var">`cross`</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114299"><span class="hs-identifier hs-var">v2</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Position Vertex Position -&gt; Position
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Position Vertex Position
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- | Primitive that is shaded on Device Coordinate</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">data</span><span> </span><span id="DCPrimitive"><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-var">DCPrimitive</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="DCPrimitive"><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-var">DCPrimitive</span></a></span></span><span> </span><span class="hs-special">{</span><span> </span><span id="_unPrimitive"><span class="annot"><span class="annottext">DCPrimitive -&gt; Primitive
+</span><a href="Brick3D.Type.html#_unPrimitive"><span class="hs-identifier hs-var hs-var">_unPrimitive</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Primitive"><span class="hs-identifier hs-type">Primitive</span></a></span><span>
+</span><span id="line-30"></span><span>                               </span><span class="hs-special">,</span><span> </span><span id="_normal"><span class="annot"><span class="annottext">DCPrimitive -&gt; Position
+</span><a href="Brick3D.Type.html#_normal"><span class="hs-identifier hs-var hs-var">_normal</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Normal"><span class="hs-identifier hs-type">Normal</span></a></span><span>
+</span><span id="line-31"></span><span>                               </span><span class="hs-special">}</span><span>
+</span><span id="line-32"></span><span id="unPrimitive"><span id="normal"><span class="hs-identifier">makeLenses</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">DCPrimitive</span></span></span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="hs-comment">-- | Traversal for evry 'Vertex' in each 'Primitive'</span><span>
+</span><span id="line-35"></span><span class="hs-comment">-- vertices pure `shouldBe` pure </span><span>
+</span><span id="line-36"></span><span class="annot"><a href="Brick3D.Type.html#vertices"><span class="hs-identifier hs-type">vertices</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Traversal'</span></span><span> </span><span class="annot"><a href="Brick3D.Type.html#Primitive"><span class="hs-identifier hs-type">Primitive</span></a></span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span>
+</span><span id="line-37"></span><span id="vertices"><span class="annot"><span class="annottext">vertices :: (Vertex -&gt; f Vertex) -&gt; Primitive -&gt; f Primitive
+</span><a href="Brick3D.Type.html#vertices"><span class="hs-identifier hs-var hs-var">vertices</span></a></span></span><span> </span><span id="local-6989586621679114291"><span class="annot"><span class="annottext">Vertex -&gt; f Vertex
+</span><a href="#local-6989586621679114291"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#Point"><span class="hs-identifier hs-type">Point</span></a></span><span> </span><span id="local-6989586621679114290"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114290"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; Primitive
+</span><a href="Brick3D.Type.html#Point"><span class="hs-identifier hs-var">Point</span></a></span><span> </span><span class="annot"><span class="annottext">(Vertex -&gt; Primitive) -&gt; f Vertex -&gt; f Primitive
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; f Vertex
+</span><a href="#local-6989586621679114291"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114290"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-38"></span><span class="annot"><a href="Brick3D.Type.html#vertices"><span class="hs-identifier hs-var">vertices</span></a></span><span> </span><span id="local-6989586621679114288"><span class="annot"><span class="annottext">Vertex -&gt; f Vertex
+</span><a href="#local-6989586621679114288"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#Triangle"><span class="hs-identifier hs-type">Triangle</span></a></span><span> </span><span id="local-6989586621679114287"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114287"><span class="hs-identifier hs-var">v1</span></a></span></span><span> </span><span id="local-6989586621679114286"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114286"><span class="hs-identifier hs-var">v2</span></a></span></span><span> </span><span id="local-6989586621679114285"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114285"><span class="hs-identifier hs-var">v3</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; Vertex -&gt; Vertex -&gt; Primitive
+</span><a href="Brick3D.Type.html#Triangle"><span class="hs-identifier hs-var">Triangle</span></a></span><span> </span><span class="annot"><span class="annottext">(Vertex -&gt; Vertex -&gt; Vertex -&gt; Primitive)
+-&gt; f Vertex -&gt; f (Vertex -&gt; Vertex -&gt; Primitive)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; f Vertex
+</span><a href="#local-6989586621679114288"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114287"><span class="hs-identifier hs-var">v1</span></a></span><span> </span><span class="annot"><span class="annottext">f (Vertex -&gt; Vertex -&gt; Primitive)
+-&gt; f Vertex -&gt; f (Vertex -&gt; Primitive)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; f Vertex
+</span><a href="#local-6989586621679114288"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114286"><span class="hs-identifier hs-var">v2</span></a></span><span> </span><span class="annot"><span class="annottext">f (Vertex -&gt; Primitive) -&gt; f Vertex -&gt; f Primitive
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; f Vertex
+</span><a href="#local-6989586621679114288"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114285"><span class="hs-identifier hs-var">v3</span></a></span><span>
+</span><span id="line-39"></span></pre></body></html>

@@ -1,0 +1,661 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Brick3D.Renderer</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Brick3D.State.html"><span class="hs-identifier">Brick3D.State</span></a></span><span>
+</span><span id="line-3"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Brick3D.Camera.html"><span class="hs-identifier">Brick3D.Camera</span></a></span><span>
+</span><span id="line-4"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Brick3D.Type.html"><span class="hs-identifier">Brick3D.Type</span></a></span><span>
+</span><span id="line-5"></span><span>
+</span><span id="line-6"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">liftIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-7"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Vector</span></span><span class="hs-special">)</span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">V</span></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Graphics.Vty.Attributes</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Attr</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">defAttr</span></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Lens.Micro.Platform</span></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.V3</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">V3</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_x</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_y</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_z</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_xyz</span></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.V4</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">V4</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.Matrix</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">mkTransformationMat</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(!*)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">identity</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Tart.Canvas</span></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fold</span></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.Vector</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(^*)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(^+^)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-comment">-- | Renders 'ThreeDState' to one 'Tart.Canvas.Canvas',</span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- which will be shown in 'Widget'</span><span>
+</span><span id="line-20"></span><span id="local-6989586621679114599"><span class="annot"><a href="Brick3D.Renderer.html#render"><span class="hs-identifier hs-type">render</span></a></span><span>  </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679114599"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Brick3D.State.html#ThreeDState"><span class="hs-identifier hs-type">ThreeDState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679114599"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="Brick3D.State.html#ThreeDState"><span class="hs-identifier hs-type">ThreeDState</span></a></span></span><span>
+</span><span id="line-21"></span><span id="render"><span class="annot"><span class="annottext">render :: ThreeDState -&gt; m ThreeDState
+</span><a href="Brick3D.Renderer.html#render"><span class="hs-identifier hs-var hs-var">render</span></a></span></span><span> </span><span id="local-6989586621679114597"><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114597"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114596"><span class="annot"><span class="annottext">rasteriezd :: [((Int, Int), Char, Attr)]
+</span><a href="#local-6989586621679114596"><span class="hs-identifier hs-var hs-var">rasteriezd</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ThreeDState -&gt; [((Int, Int), Char, Attr)]
+</span><a href="Brick3D.Renderer.html#render%27"><span class="hs-identifier hs-var">render'</span></a></span><span> </span><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114597"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span id="local-6989586621679114594"><span class="annot"><span class="annottext">Canvas
+</span><a href="#local-6989586621679114594"><span class="hs-identifier hs-var">screen'</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO Canvas -&gt; m Canvas
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO Canvas -&gt; m Canvas) -&gt; IO Canvas -&gt; m Canvas
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Canvas -&gt; IO Canvas
+</span><span class="hs-identifier hs-var">clearCanvas</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114597"><span class="hs-identifier hs-var">s</span></a></span><span class="annot"><span class="annottext">ThreeDState -&gt; Getting Canvas ThreeDState Canvas -&gt; Canvas
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Canvas ThreeDState Canvas
+Lens' ThreeDState Canvas
+</span><a href="Brick3D.State.html#screen"><span class="hs-identifier hs-var">screen</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IO Canvas -&gt; (Canvas -&gt; IO Canvas) -&gt; IO Canvas
+forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
+</span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(Canvas -&gt; [((Int, Int), Char, Attr)] -&gt; IO Canvas)
+-&gt; [((Int, Int), Char, Attr)] -&gt; Canvas -&gt; IO Canvas
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">Canvas -&gt; [((Int, Int), Char, Attr)] -&gt; IO Canvas
+</span><span class="hs-identifier hs-var">canvasSetMany</span></span><span> </span><span class="annot"><span class="annottext">[((Int, Int), Char, Attr)]
+</span><a href="#local-6989586621679114596"><span class="hs-identifier hs-var">rasteriezd</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="annot"><span class="annottext">ThreeDState -&gt; m ThreeDState
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(ThreeDState -&gt; m ThreeDState) -&gt; ThreeDState -&gt; m ThreeDState
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114597"><span class="hs-identifier hs-var">s</span></a></span><span class="annot"><span class="annottext">ThreeDState -&gt; (ThreeDState -&gt; ThreeDState) -&gt; ThreeDState
+forall a b. a -&gt; (a -&gt; b) -&gt; b
+</span><span class="hs-operator hs-var">&amp;</span></span><span class="annot"><span class="annottext">(Canvas -&gt; Identity Canvas) -&gt; ThreeDState -&gt; Identity ThreeDState
+Lens' ThreeDState Canvas
+</span><a href="Brick3D.State.html#screen"><span class="hs-identifier hs-var">screen</span></a></span><span class="annot"><span class="annottext">((Canvas -&gt; Identity Canvas)
+ -&gt; ThreeDState -&gt; Identity ThreeDState)
+-&gt; Canvas -&gt; ThreeDState -&gt; ThreeDState
+forall s t a b. ASetter s t a b -&gt; b -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">.~</span></span><span class="annot"><span class="annottext">Canvas
+</span><a href="#local-6989586621679114594"><span class="hs-identifier hs-var">screen'</span></a></span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-comment">-- | Do rendering process other than IO operation (which is done in 'render'</span><span>
+</span><span id="line-27"></span><span class="annot"><a href="Brick3D.Renderer.html#render%27"><span class="hs-identifier hs-type">render'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.State.html#ThreeDState"><span class="hs-identifier hs-type">ThreeDState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attr</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-28"></span><span id="render%27"><span class="annot"><span class="annottext">render' :: ThreeDState -&gt; [((Int, Int), Char, Attr)]
+</span><a href="Brick3D.Renderer.html#render%27"><span class="hs-identifier hs-var hs-var">render'</span></a></span></span><span> </span><span id="local-6989586621679114586"><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114586"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-comment">-- Convert to viewport coordinate</span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114585"><span class="annot"><span class="annottext">cam :: Camera
+</span><a href="#local-6989586621679114585"><span class="hs-identifier hs-var hs-var">cam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114586"><span class="hs-identifier hs-var">s</span></a></span><span class="annot"><span class="annottext">ThreeDState -&gt; Getting Camera ThreeDState Camera -&gt; Camera
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Camera ThreeDState Camera
+Lens' ThreeDState Camera
+</span><a href="Brick3D.State.html#camera"><span class="hs-identifier hs-var">camera</span></a></span><span>
+</span><span id="line-31"></span><span>      </span><span id="local-6989586621679114583"><span class="annot"><span class="annottext">focalLength :: Float
+</span><a href="#local-6989586621679114583"><span class="hs-identifier hs-var hs-var">focalLength</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">abs</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Float) -&gt; Float -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">1</span></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float
+forall a. Floating a =&gt; a -&gt; a
+</span><span class="hs-identifier hs-var">tan</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Float) -&gt; Float -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114585"><span class="hs-identifier hs-var">cam</span></a></span><span class="annot"><span class="annottext">Camera -&gt; Getting Float Camera Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float Camera Float
+Lens' Camera Float
+</span><a href="Brick3D.Camera.html#hFov"><span class="hs-identifier hs-var">hFov</span></a></span><span class="hs-special">)</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">2</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span>      </span><span class="hs-comment">-- Apply camera transform</span><span>
+</span><span id="line-33"></span><span>      </span><span id="local-6989586621679114578"><span class="annot"><span class="annottext">prims' :: Vector Primitive
+</span><a href="#local-6989586621679114578"><span class="hs-identifier hs-var hs-var">prims'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Camera -&gt; Primitive -&gt; Primitive
+</span><a href="Brick3D.Renderer.html#applyCameraTransform"><span class="hs-identifier hs-var">applyCameraTransform</span></a></span><span> </span><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114585"><span class="hs-identifier hs-var">cam</span></a></span><span> </span><span class="annot"><span class="annottext">(Primitive -&gt; Primitive) -&gt; Vector Primitive -&gt; Vector Primitive
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114586"><span class="hs-identifier hs-var">s</span></a></span><span class="annot"><span class="annottext">ThreeDState
+-&gt; Getting (Vector Primitive) ThreeDState (Vector Primitive)
+-&gt; Vector Primitive
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting (Vector Primitive) ThreeDState (Vector Primitive)
+Lens' ThreeDState (Vector Primitive)
+</span><a href="Brick3D.State.html#prims"><span class="hs-identifier hs-var">prims</span></a></span><span>
+</span><span id="line-34"></span><span>      </span><span class="hs-comment">-- Convert to device coordinate</span><span>
+</span><span id="line-35"></span><span>      </span><span class="hs-comment">-- Also, calculate Normal for later use(e.g. shading)</span><span>
+</span><span id="line-36"></span><span>      </span><span class="annot"><a href="#local-6989586621679114574"><span class="hs-identifier hs-type">dcprims</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-type">DCPrimitive</span></a></span><span>
+</span><span id="line-37"></span><span>      </span><span id="local-6989586621679114574"><span class="annot"><span class="annottext">dcprims :: Vector DCPrimitive
+</span><a href="#local-6989586621679114574"><span class="hs-identifier hs-var hs-var">dcprims</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Primitive -&gt; DCPrimitive
+</span><a href="Brick3D.Renderer.html#projectPrimitive"><span class="hs-identifier hs-var">projectPrimitive</span></a></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114583"><span class="hs-identifier hs-var">focalLength</span></a></span><span> </span><span class="annot"><span class="annottext">(Primitive -&gt; DCPrimitive)
+-&gt; Vector Primitive -&gt; Vector DCPrimitive
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Primitive -&gt; Bool) -&gt; Vector Primitive -&gt; Vector Primitive
+forall a. (a -&gt; Bool) -&gt; Vector a -&gt; Vector a
+</span><span class="hs-identifier hs-var">V.filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Camera -&gt; Primitive -&gt; Bool
+</span><a href="Brick3D.Renderer.html#farNearClip"><span class="hs-identifier hs-var">farNearClip</span></a></span><span> </span><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114585"><span class="hs-identifier hs-var">cam</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Vector Primitive
+</span><a href="#local-6989586621679114578"><span class="hs-identifier hs-var">prims'</span></a></span><span>
+</span><span id="line-38"></span><span>      </span><span id="local-6989586621679114570"><span class="annot"><span class="annottext">screen' :: Canvas
+</span><a href="#local-6989586621679114570"><span class="hs-identifier hs-var hs-var">screen'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ThreeDState
+</span><a href="#local-6989586621679114586"><span class="hs-identifier hs-var">s</span></a></span><span class="annot"><span class="annottext">ThreeDState -&gt; Getting Canvas ThreeDState Canvas -&gt; Canvas
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Canvas ThreeDState Canvas
+Lens' ThreeDState Canvas
+</span><a href="Brick3D.State.html#screen"><span class="hs-identifier hs-var">screen</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-comment">-- Geometry Construction</span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-comment">-- Shading by using property</span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-comment">-- Rasterize</span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Vector [((Int, Int), Char, Attr)] -&gt; [((Int, Int), Char, Attr)]
+forall (t :: * -&gt; *) m. (Foldable t, Monoid m) =&gt; t m -&gt; m
+</span><span class="hs-identifier hs-var">fold</span></span><span> </span><span class="annot"><span class="annottext">(Vector [((Int, Int), Char, Attr)] -&gt; [((Int, Int), Char, Attr)])
+-&gt; Vector [((Int, Int), Char, Attr)] -&gt; [((Int, Int), Char, Attr)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(DCPrimitive -&gt; [((Int, Int), Char, Attr)])
+-&gt; Vector DCPrimitive -&gt; Vector [((Int, Int), Char, Attr)]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Int, Int) -&gt; DCPrimitive -&gt; [((Int, Int), Char, Attr)]
+</span><a href="Brick3D.Renderer.html#rasterize"><span class="hs-identifier hs-var">rasterize</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Canvas -&gt; (Int, Int)
+</span><span class="hs-identifier hs-var">canvasSize</span></span><span> </span><span class="annot"><span class="annottext">Canvas
+</span><a href="#local-6989586621679114570"><span class="hs-identifier hs-var">screen'</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Vector DCPrimitive
+</span><a href="#local-6989586621679114574"><span class="hs-identifier hs-var">dcprims</span></a></span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="hs-comment">-- | 'True' if given 'Primitive' is not clipped</span><span>
+</span><span id="line-45"></span><span class="hs-comment">-- by far/near plane</span><span>
+</span><span id="line-46"></span><span class="hs-comment">-- </span><span>
+</span><span id="line-47"></span><span class="hs-comment">-- far/near&#24179;&#38754;&#12395;&#12424;&#12387;&#12390;&#25551;&#30011;&#12373;&#12428;&#12390;&#12356;&#12427;&#12363;&#12434;&#30906;&#35469;&#12377;&#12427;&#12290;</span><span>
+</span><span id="line-48"></span><span class="hs-comment">-- x,y&#26041;&#21521;&#12398;&#30906;&#35469;&#12399;&#12375;&#12394;&#12356;</span><span>
+</span><span id="line-49"></span><span class="annot"><a href="Brick3D.Renderer.html#farNearClip"><span class="hs-identifier hs-type">farNearClip</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Camera.html#Camera"><span class="hs-identifier hs-type">Camera</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Primitive"><span class="hs-identifier hs-type">Primitive</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-50"></span><span id="farNearClip"><span class="annot"><span class="annottext">farNearClip :: Camera -&gt; Primitive -&gt; Bool
+</span><a href="Brick3D.Renderer.html#farNearClip"><span class="hs-identifier hs-var hs-var">farNearClip</span></a></span></span><span> </span><span id="local-6989586621679114567"><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114567"><span class="hs-identifier hs-var">cam</span></a></span></span><span> </span><span id="local-6989586621679114566"><span class="annot"><span class="annottext">Primitive
+</span><a href="#local-6989586621679114566"><span class="hs-identifier hs-var">target</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114565"><span class="annot"><span class="annottext">camZ :: Float
+</span><a href="#local-6989586621679114565"><span class="hs-identifier hs-var hs-var">camZ</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114567"><span class="hs-identifier hs-var">cam</span></a></span><span class="annot"><span class="annottext">Camera -&gt; Getting Float Camera Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Position -&gt; Const Float Position) -&gt; Camera -&gt; Const Float Camera
+Lens' Camera Position
+</span><a href="Brick3D.Camera.html#position"><span class="hs-identifier hs-var">position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Const Float Position)
+ -&gt; Camera -&gt; Const Float Camera)
+-&gt; ((Float -&gt; Const Float Float)
+    -&gt; Position -&gt; Const Float Position)
+-&gt; Getting Float Camera Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Float -&gt; Const Float Float) -&gt; Position -&gt; Const Float Position
+forall (t :: * -&gt; *) a. R3 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_z</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span>
+</span><span id="line-51"></span><span>                             </span><span id="local-6989586621679114562"><span class="annot"><span class="annottext">far :: Float
+</span><a href="#local-6989586621679114562"><span class="hs-identifier hs-var hs-var">far</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114567"><span class="hs-identifier hs-var">cam</span></a></span><span class="annot"><span class="annottext">Camera -&gt; Getting Float Camera Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float Camera Float
+Lens' Camera Float
+</span><a href="Brick3D.Camera.html#farClip"><span class="hs-identifier hs-var">farClip</span></a></span><span>
+</span><span id="line-52"></span><span>                             </span><span id="local-6989586621679114560"><span class="annot"><span class="annottext">near :: Float
+</span><a href="#local-6989586621679114560"><span class="hs-identifier hs-var hs-var">near</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114567"><span class="hs-identifier hs-var">cam</span></a></span><span class="annot"><span class="annottext">Camera -&gt; Getting Float Camera Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float Camera Float
+Lens' Camera Float
+</span><a href="Brick3D.Camera.html#nearClip"><span class="hs-identifier hs-var">nearClip</span></a></span><span>
+</span><span id="line-53"></span><span>                         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">(Vertex -&gt; Bool) -&gt; [Vertex] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Vertex -&gt; Bool
+</span><a href="#local-6989586621679114557"><span class="hs-identifier hs-var">farNearClipVertex</span></a></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114562"><span class="hs-identifier hs-var">far</span></a></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114560"><span class="hs-identifier hs-var">near</span></a></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114565"><span class="hs-identifier hs-var">camZ</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Primitive
+</span><a href="#local-6989586621679114566"><span class="hs-identifier hs-var">target</span></a></span><span class="annot"><span class="annottext">Primitive -&gt; Getting (Endo [Vertex]) Primitive Vertex -&gt; [Vertex]
+forall s a. s -&gt; Getting (Endo [a]) s a -&gt; [a]
+</span><span class="hs-operator hs-var">^..</span></span><span class="annot"><span class="annottext">Getting (Endo [Vertex]) Primitive Vertex
+Traversal' Primitive Vertex
+</span><a href="Brick3D.Type.html#vertices"><span class="hs-identifier hs-var">vertices</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-55"></span><span>    </span><span class="annot"><a href="#local-6989586621679114557"><span class="hs-identifier hs-type">farNearClipVertex</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-56"></span><span>    </span><span id="local-6989586621679114557"><span class="annot"><span class="annottext">farNearClipVertex :: Float -&gt; Float -&gt; Float -&gt; Vertex -&gt; Bool
+</span><a href="#local-6989586621679114557"><span class="hs-identifier hs-var hs-var">farNearClipVertex</span></a></span></span><span> </span><span id="local-6989586621679114554"><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114554"><span class="hs-identifier hs-var">far</span></a></span></span><span> </span><span id="local-6989586621679114553"><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114553"><span class="hs-identifier hs-var">near</span></a></span></span><span> </span><span id="local-6989586621679114552"><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114552"><span class="hs-identifier hs-var">camZ</span></a></span></span><span> </span><span id="local-6989586621679114551"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114551"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114550"><span class="annot"><span class="annottext">tZ :: Float
+</span><a href="#local-6989586621679114550"><span class="hs-identifier hs-var hs-var">tZ</span></a></span></span><span>   </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114551"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Float Vertex Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Position -&gt; Const Float Position) -&gt; Vertex -&gt; Const Float Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Const Float Position)
+ -&gt; Vertex -&gt; Const Float Vertex)
+-&gt; ((Float -&gt; Const Float Float)
+    -&gt; Position -&gt; Const Float Position)
+-&gt; Getting Float Vertex Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Float -&gt; Const Float Float) -&gt; Position -&gt; Const Float Position
+forall (t :: * -&gt; *) a. R3 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_z</span></span><span>
+</span><span id="line-57"></span><span>                                        </span><span class="hs-comment">-- &#30011;&#38754;&#25163;&#21069;&#26041;&#21521;&#12395;z&#36600;&#12399;&#21521;&#12363;&#12387;&#12390;&#12356;&#12427;&#12398;&#12391;, &#22885;&#20596;&#12395;&#20280;&#12400;&#12375;&#12383;&#12356;&#38555;&#12399;</span><span>
+</span><span id="line-58"></span><span>                                        </span><span class="hs-comment">-- &#24341;&#12367;&#12290;</span><span>
+</span><span id="line-59"></span><span>                                        </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114552"><span class="hs-identifier hs-var">camZ</span></a></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114553"><span class="hs-identifier hs-var">near</span></a></span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114550"><span class="hs-identifier hs-var">tZ</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114550"><span class="hs-identifier hs-var">tZ</span></a></span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114552"><span class="hs-identifier hs-var">camZ</span></a></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114554"><span class="hs-identifier hs-var">far</span></a></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span class="hs-comment">-- | Project one 'Primitive' to device coordinate</span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Brick3D.Renderer.html#projectPrimitive"><span class="hs-identifier hs-type">projectPrimitive</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Primitive"><span class="hs-identifier hs-type">Primitive</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-type">DCPrimitive</span></a></span><span>
+</span><span id="line-64"></span><span id="projectPrimitive"><span class="annot"><span class="annottext">projectPrimitive :: Float -&gt; Primitive -&gt; DCPrimitive
+</span><a href="Brick3D.Renderer.html#projectPrimitive"><span class="hs-identifier hs-var hs-var">projectPrimitive</span></a></span></span><span> </span><span id="local-6989586621679114547"><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114547"><span class="hs-identifier hs-var">focalLength</span></a></span></span><span> </span><span id="local-6989586621679114546"><span class="annot"><span class="annottext">Primitive
+</span><a href="#local-6989586621679114546"><span class="hs-keyword hs-var">prim</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114545"><span class="annot"><span class="annottext">prim' :: Primitive
+</span><a href="#local-6989586621679114545"><span class="hs-identifier hs-var hs-var">prim'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ASetter Primitive Primitive Vertex Vertex
+-&gt; (Vertex -&gt; Vertex) -&gt; Primitive -&gt; Primitive
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-identifier hs-var">over</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ASetter Primitive Primitive Vertex Vertex
+Traversal' Primitive Vertex
+</span><a href="Brick3D.Type.html#vertices"><span class="hs-identifier hs-var">vertices</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Vertex -&gt; Vertex
+</span><a href="Brick3D.Renderer.html#projectVertex"><span class="hs-identifier hs-var">projectVertex</span></a></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114547"><span class="hs-identifier hs-var">focalLength</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Primitive
+</span><a href="#local-6989586621679114546"><span class="hs-keyword hs-var">prim</span></a></span><span>
+</span><span id="line-66"></span><span>      </span><span id="local-6989586621679114542"><span class="annot"><span class="annottext">norm :: Position
+</span><a href="#local-6989586621679114542"><span class="hs-identifier hs-var hs-var">norm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Primitive -&gt; Position
+</span><a href="Brick3D.Type.html#calcNormal"><span class="hs-identifier hs-var">calcNormal</span></a></span><span> </span><span class="annot"><span class="annottext">Primitive
+</span><a href="#local-6989586621679114546"><span class="hs-keyword hs-var">prim</span></a></span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Primitive -&gt; Position -&gt; DCPrimitive
+</span><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-var">DCPrimitive</span></a></span><span> </span><span class="annot"><span class="annottext">Primitive
+</span><a href="#local-6989586621679114545"><span class="hs-identifier hs-var">prim'</span></a></span><span> </span><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679114542"><span class="hs-identifier hs-var">norm</span></a></span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="hs-comment">-- | Project one vertex to device coordinate</span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Brick3D.Renderer.html#projectVertex"><span class="hs-identifier hs-type">projectVertex</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span>
+</span><span id="line-71"></span><span id="projectVertex"><span class="annot"><span class="annottext">projectVertex :: Float -&gt; Vertex -&gt; Vertex
+</span><a href="Brick3D.Renderer.html#projectVertex"><span class="hs-identifier hs-var hs-var">projectVertex</span></a></span></span><span> </span><span id="local-6989586621679114539"><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114539"><span class="hs-identifier hs-var">focalLength</span></a></span></span><span> </span><span id="local-6989586621679114538"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114538"><span class="hs-identifier hs-var">v</span></a></span></span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-comment">-- Avoid division by zero error</span><span>
+</span><span id="line-73"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114538"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Float Vertex Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Position -&gt; Const Float Position) -&gt; Vertex -&gt; Const Float Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Const Float Position)
+ -&gt; Vertex -&gt; Const Float Vertex)
+-&gt; ((Float -&gt; Const Float Float)
+    -&gt; Position -&gt; Const Float Position)
+-&gt; Getting Float Vertex Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Float -&gt; Const Float Float) -&gt; Position -&gt; Const Float Position
+forall (t :: * -&gt; *) a. R3 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_z</span></span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114538"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; (Vertex -&gt; Vertex) -&gt; Vertex
+forall a b. a -&gt; (a -&gt; b) -&gt; b
+</span><span class="hs-operator hs-var">&amp;</span></span><span class="annot"><span class="annottext">(Position -&gt; Identity Position) -&gt; Vertex -&gt; Identity Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Identity Position) -&gt; Vertex -&gt; Identity Vertex)
+-&gt; ((Float -&gt; Identity Float) -&gt; Position -&gt; Identity Position)
+-&gt; (Float -&gt; Identity Float)
+-&gt; Vertex
+-&gt; Identity Vertex
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Float -&gt; Identity Float) -&gt; Position -&gt; Identity Position
+forall (t :: * -&gt; *) a. R3 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_z</span></span><span class="annot"><span class="annottext">((Float -&gt; Identity Float) -&gt; Vertex -&gt; Identity Vertex)
+-&gt; Float -&gt; Vertex -&gt; Vertex
+forall s t a b. ASetter s t a b -&gt; b -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">.~</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114537"><span class="annot"><span class="annottext">camera2screenVector :: Float
+</span><a href="#local-6989586621679114537"><span class="hs-identifier hs-var hs-var">camera2screenVector</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114539"><span class="hs-identifier hs-var">focalLength</span></a></span><span>
+</span><span id="line-76"></span><span>        </span><span id="local-6989586621679114536"><span class="annot"><span class="annottext">percentage :: Float
+</span><a href="#local-6989586621679114536"><span class="hs-identifier hs-var hs-var">percentage</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114537"><span class="hs-identifier hs-var">camera2screenVector</span></a></span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114538"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Float Vertex Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Position -&gt; Const Float Position) -&gt; Vertex -&gt; Const Float Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Const Float Position)
+ -&gt; Vertex -&gt; Const Float Vertex)
+-&gt; ((Float -&gt; Const Float Float)
+    -&gt; Position -&gt; Const Float Position)
+-&gt; Getting Float Vertex Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Float -&gt; Const Float Float) -&gt; Position -&gt; Const Float Position
+forall (t :: * -&gt; *) a. R3 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_z</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114538"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; (Vertex -&gt; Vertex) -&gt; Vertex
+forall a b. a -&gt; (a -&gt; b) -&gt; b
+</span><span class="hs-operator hs-var">&amp;</span></span><span class="annot"><span class="annottext">(Position -&gt; Identity Position) -&gt; Vertex -&gt; Identity Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Identity Position) -&gt; Vertex -&gt; Identity Vertex)
+-&gt; (Position -&gt; Position) -&gt; Vertex -&gt; Vertex
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Float -&gt; Float) -&gt; Position -&gt; Position
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float
+forall p. (Eq p, Fractional p) =&gt; p -&gt; p
+</span><a href="#local-6989586621679114534"><span class="hs-identifier hs-var">fixMinusZero</span></a></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Float) -&gt; (Float -&gt; Float) -&gt; Float -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114536"><span class="hs-identifier hs-var">percentage</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-comment">-- | Convert -0.0 to 0</span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-comment">-- It's same in most cases,</span><span>
+</span><span id="line-81"></span><span>    </span><span class="hs-comment">-- but sometimes causes problem (e.g. hspec test).</span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-comment">-- So I replace it with 0.0, which means the same value</span><span>
+</span><span id="line-83"></span><span>    </span><span id="local-6989586621679114534"><span class="annot"><span class="annottext">fixMinusZero :: p -&gt; p
+</span><a href="#local-6989586621679114534"><span class="hs-identifier hs-var hs-var">fixMinusZero</span></a></span></span><span> </span><span id="local-6989586621679114532"><span class="annot"><span class="annottext">p
+</span><a href="#local-6989586621679114532"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">p
+</span><a href="#local-6989586621679114532"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">p -&gt; p -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">p
+</span><span class="hs-number">0.0</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">p
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-84"></span><span>                   </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">p
+</span><a href="#local-6989586621679114532"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Brick3D.Renderer.html#applyCameraTransform"><span class="hs-identifier hs-type">applyCameraTransform</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Camera.html#Camera"><span class="hs-identifier hs-type">Camera</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Primitive"><span class="hs-identifier hs-type">Primitive</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Primitive"><span class="hs-identifier hs-type">Primitive</span></a></span><span>
+</span><span id="line-88"></span><span id="applyCameraTransform"><span class="annot"><span class="annottext">applyCameraTransform :: Camera -&gt; Primitive -&gt; Primitive
+</span><a href="Brick3D.Renderer.html#applyCameraTransform"><span class="hs-identifier hs-var hs-var">applyCameraTransform</span></a></span></span><span> </span><span id="local-6989586621679114531"><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114531"><span class="hs-identifier hs-var">cam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ASetter Primitive Primitive Position Position
+-&gt; (Position -&gt; Position) -&gt; Primitive -&gt; Primitive
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-identifier hs-var">over</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ASetter Primitive Primitive Vertex Vertex
+Traversal' Primitive Vertex
+</span><a href="Brick3D.Type.html#vertices"><span class="hs-identifier hs-var">vertices</span></a></span><span class="annot"><span class="annottext">ASetter Primitive Primitive Vertex Vertex
+-&gt; ((Position -&gt; Identity Position) -&gt; Vertex -&gt; Identity Vertex)
+-&gt; ASetter Primitive Primitive Position Position
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Position -&gt; Identity Position) -&gt; Vertex -&gt; Identity Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679114530"><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679114530"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">M44 Float
+</span><a href="#local-6989586621679114529"><span class="hs-identifier hs-var">transformMatrix</span></a></span><span> </span><span class="annot"><span class="annottext">M44 Float -&gt; V4 Float -&gt; V4 Float
+forall (m :: * -&gt; *) (r :: * -&gt; *) a.
+(Functor m, Foldable r, Additive r, Num a) =&gt;
+m (r a) -&gt; r a -&gt; m a
+</span><span class="hs-operator hs-var">!*</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position -&gt; V4 Float
+forall a. Num a =&gt; V3 a -&gt; V4 a
+</span><a href="#local-6989586621679114528"><span class="hs-identifier hs-var">conv324</span></a></span><span> </span><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679114530"><span class="hs-identifier hs-var">n</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="annot"><span class="annottext">V4 Float -&gt; Getting Position (V4 Float) Position -&gt; Position
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Position (V4 Float) Position
+forall (t :: * -&gt; *) a. R3 t =&gt; Lens' (t a) (V3 a)
+</span><span class="hs-identifier hs-var">_xyz</span></span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-90"></span><span>    </span><span id="local-6989586621679114529"><span class="annot"><span class="annottext">transformMatrix :: M44 Float
+</span><a href="#local-6989586621679114529"><span class="hs-identifier hs-var hs-var">transformMatrix</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">M33 Float -&gt; Position -&gt; M44 Float
+forall a. Num a =&gt; M33 a -&gt; V3 a -&gt; M44 a
+</span><span class="hs-identifier hs-var">mkTransformationMat</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114531"><span class="hs-identifier hs-var">cam</span></a></span><span class="annot"><span class="annottext">Camera -&gt; Getting (M33 Float) Camera (M33 Float) -&gt; M33 Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting (M33 Float) Camera (M33 Float)
+Lens' Camera (M33 Float)
+</span><a href="Brick3D.Camera.html#rotation"><span class="hs-identifier hs-var">rotation</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span> </span><span class="annot"><span class="annottext">Camera
+</span><a href="#local-6989586621679114531"><span class="hs-identifier hs-var">cam</span></a></span><span class="annot"><span class="annottext">Camera -&gt; Getting Position Camera Position -&gt; Position
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Position Camera Position
+Lens' Camera Position
+</span><a href="Brick3D.Camera.html#position"><span class="hs-identifier hs-var">position</span></a></span><span class="hs-special">)</span><span> </span><span>
+</span><span id="line-91"></span><span>    </span><span id="local-6989586621679114528"><span class="annot"><span class="annottext">conv324 :: V3 a -&gt; V4 a
+</span><a href="#local-6989586621679114528"><span class="hs-identifier hs-var hs-var">conv324</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">V3</span></span><span> </span><span id="local-6989586621679114525"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679114525"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679114524"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679114524"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679114523"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679114523"><span class="hs-identifier hs-var">z</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a -&gt; a -&gt; V4 a
+forall a. a -&gt; a -&gt; a -&gt; a -&gt; V4 a
+</span><span class="hs-identifier hs-var">V4</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679114525"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679114524"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679114523"><span class="hs-identifier hs-var">z</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-92"></span><span class="hs-comment">-- applyCameraTransform :: Camera -&gt; Primitive -&gt; (Camera, Primitive)</span><span>
+</span><span id="line-93"></span><span class="hs-comment">-- applyCameraTransform cam prim = ((cam&amp;position.~(V3 0 0 0)), (prim&amp;vertices.position%~(\n -&gt; n - cam^.position)))</span><span>
+</span><span id="line-94"></span><span>  </span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="hs-comment">-- | Rasterize one 'DCPrimitive'</span><span>
+</span><span id="line-97"></span><span class="annot"><a href="Brick3D.Renderer.html#rasterize"><span class="hs-identifier hs-type">rasterize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-type">DCPrimitive</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attr</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-98"></span><span id="rasterize"><span class="annot"><span class="annottext">rasterize :: (Int, Int) -&gt; DCPrimitive -&gt; [((Int, Int), Char, Attr)]
+</span><a href="Brick3D.Renderer.html#rasterize"><span class="hs-identifier hs-var hs-var">rasterize</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114521"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114521"><span class="hs-identifier hs-var">sx</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114520"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114520"><span class="hs-identifier hs-var">sy</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-type">DCPrimitive</span></a></span><span> </span><span id="local-6989586621679114519"><span class="annot"><span class="annottext">Primitive
+</span><a href="#local-6989586621679114519"><span class="hs-identifier hs-var">shape</span></a></span></span><span> </span><span id="local-6989586621679114518"><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679114518"><span class="hs-identifier hs-var">normal</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Primitive
+</span><a href="#local-6989586621679114519"><span class="hs-identifier hs-var">shape</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-100"></span><span>    </span><span class="annot"><a href="Brick3D.Type.html#Point"><span class="hs-identifier hs-type">Point</span></a></span><span> </span><span id="local-6989586621679114516"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114516"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-101"></span><span>      </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vertex -&gt; (Int, Int)
+</span><a href="#local-6989586621679114515"><span class="hs-identifier hs-var">rasterizeVertex</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114516"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-102"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'*'</span></span><span>
+</span><span id="line-103"></span><span>       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Attr
+</span><span class="hs-identifier hs-var">defAttr</span></span><span>
+</span><span id="line-104"></span><span>       </span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-105"></span><span>    </span><span id="local-6989586621679114514"><span class="annot"><span class="annottext">tri :: Primitive
+</span><a href="#local-6989586621679114514"><span class="hs-identifier hs-var">tri</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#Triangle"><span class="hs-identifier hs-type">Triangle</span></a></span><span> </span><span id="local-6989586621679114512"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114512"><span class="hs-identifier hs-var">v1</span></a></span></span><span> </span><span id="local-6989586621679114511"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114511"><span class="hs-identifier hs-var">v2</span></a></span></span><span> </span><span id="local-6989586621679114510"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114510"><span class="hs-identifier hs-var">v3</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-106"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114509"><span class="annot"><span class="annottext">outlineVertices :: [Vertex]
+</span><a href="#local-6989586621679114509"><span class="hs-identifier hs-var hs-var">outlineVertices</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; Vertex -&gt; [Vertex]
+</span><a href="Brick3D.Renderer.html#rasterizeLine"><span class="hs-identifier hs-var">rasterizeLine</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114512"><span class="hs-identifier hs-var">v1</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114510"><span class="hs-identifier hs-var">v3</span></a></span><span> </span><span class="annot"><span class="annottext">[Vertex] -&gt; [Vertex] -&gt; [Vertex]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; Vertex -&gt; [Vertex]
+</span><a href="Brick3D.Renderer.html#rasterizeLine"><span class="hs-identifier hs-var">rasterizeLine</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114512"><span class="hs-identifier hs-var">v1</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114511"><span class="hs-identifier hs-var">v2</span></a></span><span> </span><span class="annot"><span class="annottext">[Vertex] -&gt; [Vertex] -&gt; [Vertex]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vertex -&gt; Vertex -&gt; [Vertex]
+</span><a href="Brick3D.Renderer.html#rasterizeLine"><span class="hs-identifier hs-var">rasterizeLine</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114511"><span class="hs-identifier hs-var">v2</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114510"><span class="hs-identifier hs-var">v3</span></a></span><span>
+</span><span id="line-107"></span><span>      </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">((Vertex -&gt; ((Int, Int), Char, Attr))
+ -&gt; [Vertex] -&gt; [((Int, Int), Char, Attr)])
+-&gt; [Vertex]
+-&gt; (Vertex -&gt; ((Int, Int), Char, Attr))
+-&gt; [((Int, Int), Char, Attr)]
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">(Vertex -&gt; ((Int, Int), Char, Attr))
+-&gt; [Vertex] -&gt; [((Int, Int), Char, Attr)]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">[Vertex]
+</span><a href="#local-6989586621679114509"><span class="hs-identifier hs-var">outlineVertices</span></a></span><span> </span><span class="annot"><span class="annottext">((Vertex -&gt; ((Int, Int), Char, Attr))
+ -&gt; [((Int, Int), Char, Attr)])
+-&gt; (Vertex -&gt; ((Int, Int), Char, Attr))
+-&gt; [((Int, Int), Char, Attr)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679114507"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114507"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>                                       </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vertex -&gt; (Int, Int)
+</span><a href="#local-6989586621679114515"><span class="hs-identifier hs-var">rasterizeVertex</span></a></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114507"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-109"></span><span>                                       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'.'</span></span><span>
+</span><span id="line-110"></span><span>                                       </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Attr
+</span><span class="hs-identifier hs-var">defAttr</span></span><span>
+</span><span id="line-111"></span><span>                                       </span><span class="hs-special">)</span><span>
+</span><span id="line-112"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-113"></span><span>    </span><span id="local-6989586621679114506"><span class="annot"><span class="annottext">halfX :: Int
+</span><a href="#local-6989586621679114506"><span class="hs-identifier hs-var hs-var">halfX</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Int
+forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Int) -&gt; Float -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Rational -&gt; Float
+forall a. Fractional a =&gt; Rational -&gt; a
+</span><span class="hs-identifier hs-var">fromRational</span></span><span class="annot"><span class="annottext">(Rational -&gt; Float) -&gt; (Int -&gt; Rational) -&gt; Int -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">Int -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Float) -&gt; Int -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114521"><span class="hs-identifier hs-var">sx</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">)</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">2</span></span><span>
+</span><span id="line-114"></span><span>    </span><span id="local-6989586621679114504"><span class="annot"><span class="annottext">halfY :: Int
+</span><a href="#local-6989586621679114504"><span class="hs-identifier hs-var hs-var">halfY</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Int
+forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Int) -&gt; Float -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Rational -&gt; Float
+forall a. Fractional a =&gt; Rational -&gt; a
+</span><span class="hs-identifier hs-var">fromRational</span></span><span class="annot"><span class="annottext">(Rational -&gt; Float) -&gt; (Int -&gt; Rational) -&gt; Int -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">Int -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Float) -&gt; Int -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114520"><span class="hs-identifier hs-var">sy</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">)</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">2</span></span><span>
+</span><span id="line-115"></span><span>    </span><span id="local-6989586621679114503"><span class="annot"><span class="annottext">moveOriginToCenter :: (Int, Int) -&gt; (Int, Int)
+</span><a href="#local-6989586621679114503"><span class="hs-identifier hs-var hs-var">moveOriginToCenter</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679114502"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114502"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679114501"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114501"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114502"><span class="hs-identifier hs-var">x</span></a></span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114506"><span class="hs-identifier hs-var">halfX</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114501"><span class="hs-identifier hs-var">y</span></a></span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114504"><span class="hs-identifier hs-var">halfY</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-116"></span><span>    </span><span id="local-6989586621679114515"><span class="annot"><span class="annottext">rasterizeVertex :: Vertex -&gt; (Int, Int)
+</span><a href="#local-6989586621679114515"><span class="hs-identifier hs-var hs-var">rasterizeVertex</span></a></span></span><span> </span><span id="local-6989586621679114499"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114499"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int, Int) -&gt; (Int, Int)
+</span><a href="#local-6989586621679114503"><span class="hs-identifier hs-var">moveOriginToCenter</span></a></span><span> </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Int
+forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Int) -&gt; Float -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Float
+forall a. Num a =&gt; Integer -&gt; a
+</span><span class="hs-identifier hs-var">fromInteger</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Float) -&gt; (Int -&gt; Integer) -&gt; Int -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Float) -&gt; Int -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114521"><span class="hs-identifier hs-var">sx</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114499"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Float Vertex Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Position -&gt; Const Float Position) -&gt; Vertex -&gt; Const Float Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Const Float Position)
+ -&gt; Vertex -&gt; Const Float Vertex)
+-&gt; ((Float -&gt; Const Float Float)
+    -&gt; Position -&gt; Const Float Position)
+-&gt; Getting Float Vertex Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Float -&gt; Const Float Float) -&gt; Position -&gt; Const Float Position
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span>
+</span><span id="line-117"></span><span>                                           </span><span class="hs-special">,</span><span> </span><span class="hs-glyph">-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Int
+forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Int) -&gt; Float -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Float
+forall a. Num a =&gt; Integer -&gt; a
+</span><span class="hs-identifier hs-var">fromInteger</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Float) -&gt; (Int -&gt; Integer) -&gt; Int -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Float) -&gt; Int -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679114520"><span class="hs-identifier hs-var">sy</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114499"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Float Vertex Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Position -&gt; Const Float Position) -&gt; Vertex -&gt; Const Float Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Const Float Position)
+ -&gt; Vertex -&gt; Const Float Vertex)
+-&gt; ((Float -&gt; Const Float Float)
+    -&gt; Position -&gt; Const Float Position)
+-&gt; Getting Float Vertex Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Float -&gt; Const Float Float) -&gt; Position -&gt; Const Float Position
+forall (t :: * -&gt; *) a. R2 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_y</span></span><span class="hs-special">)</span><span>
+</span><span id="line-118"></span><span>                                           </span><span class="hs-special">)</span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="hs-comment">-- | 'Vertex's which constructs line begin at 'begin' and end at 'end'</span><span>
+</span><span id="line-121"></span><span class="hs-comment">--</span><span>
+</span><span id="line-122"></span><span class="hs-comment">-- JP: &#19982;&#12360;&#12425;&#12428;&#12383; 'begin' &#12392; 'end' &#12434;&#20001;&#31471;&#12395;&#25345;&#12388;&#32218;&#20998;&#12434;&#27083;&#25104;&#12377;&#12427; 'Vertex' &#12434;&#36820;&#12375;&#12414;&#12377;</span><span>
+</span><span id="line-123"></span><span class="annot"><a href="Brick3D.Renderer.html#rasterizeLine"><span class="hs-identifier hs-type">rasterizeLine</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Brick3D.Type.html#Vertex"><span class="hs-identifier hs-type">Vertex</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-124"></span><span id="rasterizeLine"><span class="annot"><span class="annottext">rasterizeLine :: Vertex -&gt; Vertex -&gt; [Vertex]
+</span><a href="Brick3D.Renderer.html#rasterizeLine"><span class="hs-identifier hs-var hs-var">rasterizeLine</span></a></span></span><span> </span><span id="local-6989586621679114498"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114498"><span class="hs-identifier hs-var">begin</span></a></span></span><span> </span><span id="local-6989586621679114497"><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114497"><span class="hs-identifier hs-var">end</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679114496"><span class="annot"><span class="annottext">v :: Position
+</span><a href="#local-6989586621679114496"><span class="hs-identifier hs-var hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114497"><span class="hs-identifier hs-var">end</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Position Vertex Position -&gt; Position
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Position Vertex Position
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span> </span><span class="annot"><span class="annottext">Position -&gt; Position -&gt; Position
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114498"><span class="hs-identifier hs-var">begin</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Position Vertex Position -&gt; Position
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Position Vertex Position
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Normal"><span class="hs-identifier hs-type">Normal</span></a></span><span>
+</span><span id="line-125"></span><span>                              </span><span id="local-6989586621679114494"><span class="annot"><span class="annottext">formula :: Float -&gt; Position
+</span><a href="#local-6989586621679114494"><span class="hs-identifier hs-var hs-var">formula</span></a></span></span><span> </span><span id="local-6989586621679114493"><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114493"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114498"><span class="hs-identifier hs-var">begin</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; Getting Position Vertex Position -&gt; Position
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Position Vertex Position
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Position -&gt; Position -&gt; Position
+forall (f :: * -&gt; *) a. (Additive f, Num a) =&gt; f a -&gt; f a -&gt; f a
+</span><span class="hs-operator hs-var">^+^</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679114496"><span class="hs-identifier hs-var">v</span></a></span><span> </span><span class="annot"><span class="annottext">Position -&gt; Float -&gt; Position
+forall (f :: * -&gt; *) a. (Functor f, Num a) =&gt; f a -&gt; a -&gt; f a
+</span><span class="hs-operator hs-var">^*</span></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114493"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-126"></span><span>                              </span><span id="local-6989586621679114492"><span class="annot"><span class="annottext">ts :: [Float]
+</span><a href="#local-6989586621679114492"><span class="hs-identifier hs-var hs-var">ts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Float) -&gt; [Float] -&gt; [Float]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span> </span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">500</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">0</span></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Float
+</span><span class="hs-number">500</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">]</span><span>
+</span><span id="line-127"></span><span>                          </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Vertex) -&gt; [Float] -&gt; [Vertex]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679114491"><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114491"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Vertex
+</span><a href="#local-6989586621679114498"><span class="hs-identifier hs-var">begin</span></a></span><span class="annot"><span class="annottext">Vertex -&gt; (Vertex -&gt; Vertex) -&gt; Vertex
+forall a b. a -&gt; (a -&gt; b) -&gt; b
+</span><span class="hs-operator hs-var">&amp;</span></span><span class="annot"><span class="annottext">(Position -&gt; Identity Position) -&gt; Vertex -&gt; Identity Vertex
+Lens' Vertex Position
+</span><a href="Brick3D.Type.html#v_position"><span class="hs-identifier hs-var">v_position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Identity Position) -&gt; Vertex -&gt; Identity Vertex)
+-&gt; Position -&gt; Vertex -&gt; Vertex
+forall s t a b. ASetter s t a b -&gt; b -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">.~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Position
+</span><a href="#local-6989586621679114494"><span class="hs-identifier hs-var">formula</span></a></span><span> </span><span class="annot"><span class="annottext">Float
+</span><a href="#local-6989586621679114491"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Float]
+</span><a href="#local-6989586621679114492"><span class="hs-identifier hs-var">ts</span></a></span><span>
+</span><span id="line-128"></span></pre></body></html>
