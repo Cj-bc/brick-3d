@@ -1,0 +1,14 @@
+name: haddock
+
+on: push
+
+jobs:
+  runHaddock:
+    name: run haddock generation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: Cj-bc/generate-haddock-action@v0.1.1
+      
