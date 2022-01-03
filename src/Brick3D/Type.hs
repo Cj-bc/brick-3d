@@ -29,19 +29,24 @@ fromVertex :: Vertex -> DCVertex
 fromVertex v = DCVertex (V2 (v^.v_position._x) (v^.v_position._y)) (v^.v_position._z)
 
 
-data Primitive = Point Vertex
-               -- | Line (Vector Vertex)
-               | Triangle Vertex Vertex Vertex
-               deriving (Show, Eq, Ord)
-makeLenses ''Primitive
+-- | Define Primitive shapes.
+-- This would
+data PrimitiveBase vtype = Point vtype
+                         -- | Line (Vector vtype)
+                         | Triangle vtype vtype vtype
+                         deriving (Show, Eq, Ord)
+makeLenses ''PrimitiveBase
+
+-- | Primitive shape that in 3D world
+type Primitive = PrimitiveBase Vertex
 
 -- | Calculate 'Normal' of 'Primitive'
 calcNormal :: Primitive -> Normal
 calcNormal (Point p) = p^.v_position
 calcNormal (Triangle v1 v2 _) = (v1^.v_position) `cross` (v2^.v_position)
 
--- | Primitive that is shaded on Device Coordinate
-data DCPrimitive = DCPrimitive { _unPrimitive :: Primitive
+-- | 'Primitive' that is shaded on Device Coordinate
+data DCPrimitive = DCPrimitive { _unPrimitive :: PrimitiveBase DCVertex
                                , _normal :: Normal
                                }
 makeLenses ''DCPrimitive
