@@ -1,15 +1,48 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Brick3D.Type where
+module Brick3D.Type (
+  -- * Basic type aliases
+  Position
+  , Rotation
+  , DCPosition
+  , Normal
+  
+  -- * Vertices
+  , Vertex
+  , v_position
+  , DCVertex
+  , dcv_position
+  , zBuffer
+  , fromVertex
+
+  -- * Primitives
+  , Point, Triangle
+  , Primitive
+  , calcNormal
+  , DCPrimitive
+  , unPrimitive
+  , normal
+
+  -- * Utility functions
+  , vertices
+  , toDCPrimitive
+
+) where
+
 import Linear.V3 (V3(..), cross, _x, _y, _z)
 import Linear.V2 (V2(..))
 import Linear.Matrix (M33(..))
 import Lens.Micro.Platform
 
+
+-- | Position in 3-Dimension
 type Position = V3 Float
+-- | Rotation in 3-Dimension
 type Rotation = M33 Float
 -- | Position in Device Coordinate
 type DCPosition = V2 Float
+-- | Normal of some 3-Dimensional object
 type Normal   = V3 Float
+
 
 -- | One 'Vertex'
 data Vertex = Vertex { _v_position :: Position
@@ -51,8 +84,8 @@ data DCPrimitive = DCPrimitive { _unPrimitive :: PrimitiveBase DCVertex
                                }
 makeLenses ''DCPrimitive
 
--- | Traversal for evry 'Vertex' in each 'Primitive'
--- vertices pure `shouldBe` pure 
+
+-- | 'Traversal' for evry 'Vertex' in each 'Primitive'
 vertices :: Traversal' Primitive Vertex
 vertices f (Point v) = Point <$> f v
 vertices f (Triangle v1 v2 v3) = Triangle <$> f v1 <*> f v2 <*> f v3
