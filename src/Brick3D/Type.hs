@@ -7,18 +7,18 @@ module Brick3D.Type (
   , Normal
   
   -- * Vertices
-  , Vertex
+  , Vertex(Vertex)
   , v_position
-  , DCVertex
+  , DCVertex(DCVertex)
   , dcv_position
   , zBuffer
   , fromVertex
 
   -- * Primitives
-  , Point, Triangle
+  , PrimitiveBase(..)
   , Primitive
   , calcNormal
-  , DCPrimitive
+  , DCPrimitive(DCPrimitive)
   , unPrimitive
   , normal
 
