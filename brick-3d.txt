@@ -8,38 +8,65 @@
 @version 0.1.0.0
 
 module Brick3D.Type
+
+-- | Position in 3-Dimension
 type Position = V3 Float
+
+-- | Rotation in 3-Dimension
 type Rotation = M33 Float
+
+-- | Position in Device Coordinate
+type DCPosition = V2 Float
+
+-- | Normal of some 3-Dimensional object
 type Normal = V3 Float
 
 -- | One <a>Vertex</a>
 data Vertex
 Vertex :: Position -> Vertex
-[_v_position] :: Vertex -> Position
 v_position :: Lens' Vertex Position
-data Primitive
-Point :: Vertex -> Primitive
 
--- | Line (Vector Vertex)
-Triangle :: Vertex -> Vertex -> Vertex -> Primitive
+-- | <a>Vertex</a> that is mapped to Device Coordinate
+data DCVertex
+DCVertex :: DCPosition -> Float -> DCVertex
+dcv_position :: Lens' DCVertex DCPosition
+zBuffer :: Lens' DCVertex Float
+
+-- | Convert <a>Vertex</a> to <a>DCVertex</a>
+fromVertex :: Vertex -> DCVertex
+
+-- | Define Primitive shapes. This would
+data PrimitiveBase vtype
+Point :: vtype -> PrimitiveBase vtype
+
+-- | Line (Vector vtype)
+Triangle :: vtype -> vtype -> vtype -> PrimitiveBase vtype
+
+-- | Primitive shape that in 3D world
+type Primitive = PrimitiveBase Vertex
 
 -- | Calculate <a>Normal</a> of <a>Primitive</a>
 calcNormal :: Primitive -> Normal
 
--- | Primitive that is shaded on Device Coordinate
+-- | <a>Primitive</a> that is shaded on Device Coordinate
 data DCPrimitive
-DCPrimitive :: Primitive -> Normal -> DCPrimitive
-[_unPrimitive] :: DCPrimitive -> Primitive
-[_normal] :: DCPrimitive -> Normal
-unPrimitive :: Lens' DCPrimitive Primitive
+DCPrimitive :: PrimitiveBase DCVertex -> Normal -> DCPrimitive
+unPrimitive :: Lens' DCPrimitive (PrimitiveBase DCVertex)
 normal :: Lens' DCPrimitive Normal
 
--- | Traversal for evry <a>Vertex</a> in each <a>Primitive</a> vertices
---   pure <tt>shouldBe</tt> pure
+-- | <a>Traversal</a> for evry <a>Vertex</a> in each <a>Primitive</a>
 vertices :: Traversal' Primitive Vertex
-instance GHC.Classes.Ord Brick3D.Type.Primitive
-instance GHC.Classes.Eq Brick3D.Type.Primitive
-instance GHC.Show.Show Brick3D.Type.Primitive
+
+-- | <b>THIS ISN'T <a>Traversal</a></b>
+--   
+--   Convert <a>Primitive</a> to <a>DCPrimitive</a>
+toDCPrimitive :: (Vertex -> DCVertex) -> Primitive -> DCPrimitive
+instance GHC.Classes.Ord vtype => GHC.Classes.Ord (Brick3D.Type.PrimitiveBase vtype)
+instance GHC.Classes.Eq vtype => GHC.Classes.Eq (Brick3D.Type.PrimitiveBase vtype)
+instance GHC.Show.Show vtype => GHC.Show.Show (Brick3D.Type.PrimitiveBase vtype)
+instance GHC.Classes.Ord Brick3D.Type.DCVertex
+instance GHC.Classes.Eq Brick3D.Type.DCVertex
+instance GHC.Show.Show Brick3D.Type.DCVertex
 instance GHC.Classes.Ord Brick3D.Type.Vertex
 instance GHC.Classes.Eq Brick3D.Type.Vertex
 instance GHC.Show.Show Brick3D.Type.Vertex
@@ -105,7 +132,7 @@ farNearClip :: Camera -> Primitive -> Bool
 projectPrimitive :: Float -> Primitive -> DCPrimitive
 
 -- | Project one vertex to device coordinate
-projectVertex :: Float -> Vertex -> Vertex
+projectVertex :: Float -> Vertex -> DCVertex
 applyCameraTransform :: Camera -> Primitive -> Primitive
 
 -- | Rasterize one <a>DCPrimitive</a>
@@ -116,7 +143,7 @@ rasterize :: (Int, Int) -> DCPrimitive -> [((Int, Int), Char, Attr)]
 --   
 --   JP: 与えられた <tt>begin</tt> と <tt>end</tt> を両端に持つ線分を構成する <a>Vertex</a>
 --   を返します
-rasterizeLine :: Vertex -> Vertex -> [Vertex]
+rasterizeLine :: DCVertex -> DCVertex -> [DCVertex]
 
 module Brick.Extensions.ThreeD.Widgets
 

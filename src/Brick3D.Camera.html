@@ -21,7 +21,7 @@
 </span><span id="line-16"></span><span id="rotation"><span id="position"><span id="nearClip"><span id="hFov"><span id="farClip"><span class="hs-identifier">makeLenses</span><span> </span><span class="hs-special">''</span><span class="hs-identifier">Camera</span></span></span></span></span></span><span>
 </span><span id="line-17"></span><span>
 </span><span id="line-18"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Default</span></span><span> </span><span class="annot"><a href="Brick3D.Camera.html#Camera"><span class="hs-identifier hs-type">Camera</span></a></span><span> </span><span class="hs-keyword">where</span><span>
-</span><span id="line-19"></span><span>  </span><span id="local-6989586621679114416"><span class="annot"><span class="annottext">def :: Camera
+</span><span id="line-19"></span><span>  </span><span id="local-6989586621679118031"><span class="annot"><span class="annottext">def :: Camera
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var">def</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Position -&gt; Rotation -&gt; Float -&gt; Float -&gt; Float -&gt; Camera
 </span><a href="Brick3D.Camera.html#Camera"><span class="hs-identifier hs-var">Camera</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float -&gt; Position
 forall a. a -&gt; a -&gt; a -&gt; V3 a
@@ -40,39 +40,39 @@ t (t a)
 </span><span id="line-21"></span><span class="hs-comment">-- | Move camera's transform</span><span>
 </span><span id="line-22"></span><span class="annot"><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-type">moveCamera</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#Position"><span class="hs-identifier hs-type">Position</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Camera.html#Camera"><span class="hs-identifier hs-type">Camera</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Camera.html#Camera"><span class="hs-identifier hs-type">Camera</span></a></span><span>
 </span><span id="line-23"></span><span id="moveCamera"><span class="annot"><span class="annottext">moveCamera :: Position -&gt; Camera -&gt; Camera
-</span><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-var hs-var">moveCamera</span></a></span></span><span> </span><span id="local-6989586621679114411"><span class="annot"><span class="annottext">Position
-</span><a href="#local-6989586621679114411"><span class="hs-identifier hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Position -&gt; Identity Position) -&gt; Camera -&gt; Identity Camera
+</span><a href="Brick3D.Camera.html#moveCamera"><span class="hs-identifier hs-var hs-var">moveCamera</span></a></span></span><span> </span><span id="local-6989586621679118026"><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679118026"><span class="hs-identifier hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Position -&gt; Identity Position) -&gt; Camera -&gt; Identity Camera
 Lens' Camera Position
 </span><a href="Brick3D.Camera.html#position"><span class="hs-identifier hs-var">position</span></a></span><span class="annot"><span class="annottext">((Position -&gt; Identity Position) -&gt; Camera -&gt; Identity Camera)
 -&gt; Position -&gt; Camera -&gt; Camera
 forall a s t. Num a =&gt; ASetter s t a a -&gt; a -&gt; s -&gt; t
 </span><span class="hs-operator hs-var">+~</span></span><span class="annot"><span class="annottext">Position
-</span><a href="#local-6989586621679114411"><span class="hs-identifier hs-var">diff</span></a></span><span>
+</span><a href="#local-6989586621679118026"><span class="hs-identifier hs-var">diff</span></a></span><span>
 </span><span id="line-24"></span><span>
 </span><span id="line-25"></span><span class="hs-comment">-- | Rotate Camera</span><span>
 </span><span id="line-26"></span><span class="hs-comment">--</span><span>
 </span><span id="line-27"></span><span class="hs-comment">-- &#12459;&#12513;&#12521;&#33258;&#36523;&#12398;&#22580;&#25152;&#12391;&#22238;&#12377;&#12395;&#12399;&#12393;&#12358;&#12377;&#12428;&#12400;&#65311;&#65311;</span><span>
 </span><span id="line-28"></span><span class="annot"><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-type">rotateCamera</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V3</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Camera.html#Camera"><span class="hs-identifier hs-type">Camera</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Camera.html#Camera"><span class="hs-identifier hs-type">Camera</span></a></span><span>
 </span><span id="line-29"></span><span id="rotateCamera"><span class="annot"><span class="annottext">rotateCamera :: Position -&gt; Camera -&gt; Camera
-</span><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-var hs-var">rotateCamera</span></a></span></span><span> </span><span id="local-6989586621679114408"><span class="annot"><span class="annottext">Position
-</span><a href="#local-6989586621679114408"><span class="hs-identifier hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Rotation -&gt; Identity Rotation) -&gt; Camera -&gt; Identity Camera
+</span><a href="Brick3D.Camera.html#rotateCamera"><span class="hs-identifier hs-var hs-var">rotateCamera</span></a></span></span><span> </span><span id="local-6989586621679118023"><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679118023"><span class="hs-identifier hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Rotation -&gt; Identity Rotation) -&gt; Camera -&gt; Identity Camera
 Lens' Camera Rotation
 </span><a href="Brick3D.Camera.html#rotation"><span class="hs-identifier hs-var">rotation</span></a></span><span class="annot"><span class="annottext">((Rotation -&gt; Identity Rotation) -&gt; Camera -&gt; Identity Camera)
 -&gt; (Rotation -&gt; Rotation) -&gt; Camera -&gt; Camera
 forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
-</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679114406"><span class="annot"><span class="annottext">Rotation
-</span><a href="#local-6989586621679114406"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Rotation
-</span><a href="#local-6989586621679114405"><span class="hs-identifier hs-var">rotationMat</span></a></span><span> </span><span class="annot"><span class="annottext">Rotation -&gt; Rotation -&gt; Rotation
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679118021"><span class="annot"><span class="annottext">Rotation
+</span><a href="#local-6989586621679118021"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Rotation
+</span><a href="#local-6989586621679118020"><span class="hs-identifier hs-var">rotationMat</span></a></span><span> </span><span class="annot"><span class="annottext">Rotation -&gt; Rotation -&gt; Rotation
 forall (m :: * -&gt; *) (t :: * -&gt; *) (n :: * -&gt; *) a.
 (Functor m, Foldable t, Additive t, Additive n, Num a) =&gt;
 m (t a) -&gt; t (n a) -&gt; m (n a)
 </span><span class="hs-operator hs-var">!*!</span></span><span> </span><span class="annot"><span class="annottext">Rotation
-</span><a href="#local-6989586621679114406"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679118021"><span class="hs-identifier hs-var">r</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-30"></span><span>  </span><span class="hs-keyword">where</span><span>
 </span><span id="line-31"></span><span>    </span><span class="hs-comment">-- &#22238;&#36578;&#34892;&#21015;</span><span>
-</span><span id="line-32"></span><span>    </span><span id="local-6989586621679114403"><span class="annot"><span class="annottext">rotation_x :: a -&gt; V3 (V3 a)
-</span><a href="#local-6989586621679114403"><span class="hs-identifier hs-var hs-var">rotation_x</span></a></span></span><span> </span><span id="local-6989586621679114402"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114402"><span class="hs-identifier hs-var">theta</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">V3 a -&gt; V3 a -&gt; V3 a -&gt; V3 (V3 a)
+</span><span id="line-32"></span><span>    </span><span id="local-6989586621679118018"><span class="annot"><span class="annottext">rotation_x :: a -&gt; V3 (V3 a)
+</span><a href="#local-6989586621679118018"><span class="hs-identifier hs-var hs-var">rotation_x</span></a></span></span><span> </span><span id="local-6989586621679118017"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679118017"><span class="hs-identifier hs-var">theta</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">V3 a -&gt; V3 a -&gt; V3 a -&gt; V3 (V3 a)
 forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a -&gt; a -&gt; V3 a
 forall a. a -&gt; a -&gt; a -&gt; V3 a
@@ -86,34 +86,34 @@ forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-number">0</span></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">cos</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114402"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
+</span><a href="#local-6989586621679118017"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">sin</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114402"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679118017"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-34"></span><span>                          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a -&gt; a -&gt; V3 a
 forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span>              </span><span class="annot"><span class="annottext">a
 </span><span class="hs-number">0</span></span><span>  </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">sin</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114402"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
+</span><a href="#local-6989586621679118017"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">cos</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114402"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-35"></span><span>    </span><span id="local-6989586621679114399"><span class="annot"><span class="annottext">rotation_y :: a -&gt; V3 (V3 a)
-</span><a href="#local-6989586621679114399"><span class="hs-identifier hs-var hs-var">rotation_y</span></a></span></span><span> </span><span id="local-6989586621679114398"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114398"><span class="hs-identifier hs-var">theta</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">V3 a -&gt; V3 a -&gt; V3 a -&gt; V3 (V3 a)
+</span><a href="#local-6989586621679118017"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>    </span><span id="local-6989586621679118014"><span class="annot"><span class="annottext">rotation_y :: a -&gt; V3 (V3 a)
+</span><a href="#local-6989586621679118014"><span class="hs-identifier hs-var hs-var">rotation_y</span></a></span></span><span> </span><span id="local-6989586621679118013"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679118013"><span class="hs-identifier hs-var">theta</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">V3 a -&gt; V3 a -&gt; V3 a -&gt; V3 (V3 a)
 forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a -&gt; a -&gt; V3 a
 forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">cos</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114398"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span>              </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679118013"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span>              </span><span class="annot"><span class="annottext">a
 </span><span class="hs-number">0</span></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">sin</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114398"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679118013"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-36"></span><span>                          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a -&gt; a -&gt; V3 a
 forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span>              </span><span class="annot"><span class="annottext">a
@@ -125,37 +125,37 @@ forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">sin</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114398"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>              </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679118013"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>              </span><span class="annot"><span class="annottext">a
 </span><span class="hs-number">0</span></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">cos</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114398"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679118013"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-38"></span><span>    </span><span class="hs-comment">-- (cos &#952;) (-sin &#952;) 0</span><span>
 </span><span id="line-39"></span><span>    </span><span class="hs-comment">-- (sin &#952;)  (cos &#952;) &#952;</span><span>
 </span><span id="line-40"></span><span>    </span><span class="hs-comment">--      0        0  1</span><span>
-</span><span id="line-41"></span><span>    </span><span id="local-6989586621679114397"><span class="annot"><span class="annottext">rotation_z :: a -&gt; V3 (V3 a)
-</span><a href="#local-6989586621679114397"><span class="hs-identifier hs-var hs-var">rotation_z</span></a></span></span><span> </span><span id="local-6989586621679114396"><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114396"><span class="hs-identifier hs-var">theta</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">V3 a -&gt; V3 a -&gt; V3 a -&gt; V3 (V3 a)
+</span><span id="line-41"></span><span>    </span><span id="local-6989586621679118012"><span class="annot"><span class="annottext">rotation_z :: a -&gt; V3 (V3 a)
+</span><a href="#local-6989586621679118012"><span class="hs-identifier hs-var hs-var">rotation_z</span></a></span></span><span> </span><span id="local-6989586621679118011"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679118011"><span class="hs-identifier hs-var">theta</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">V3 a -&gt; V3 a -&gt; V3 a -&gt; V3 (V3 a)
 forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a -&gt; a -&gt; V3 a
 forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">cos</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114396"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
+</span><a href="#local-6989586621679118011"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">sin</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114396"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>          </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679118011"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>          </span><span class="annot"><span class="annottext">a
 </span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
 </span><span id="line-42"></span><span>                          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a -&gt; a -&gt; V3 a
 forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-identifier hs-var">V3</span></span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">sin</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114396"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
+</span><a href="#local-6989586621679118011"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span>     </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a
 forall a. Floating a =&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">cos</span></span><span> </span><span class="annot"><span class="annottext">a
-</span><a href="#local-6989586621679114396"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span>          </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679118011"><span class="hs-identifier hs-var">theta</span></a></span><span class="hs-special">)</span><span>          </span><span class="annot"><span class="annottext">a
 </span><span class="hs-number">0</span></span><span class="hs-special">)</span><span>
 </span><span id="line-43"></span><span>                          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a -&gt; a -&gt; V3 a
 forall a. a -&gt; a -&gt; a -&gt; V3 a
@@ -164,11 +164,11 @@ forall a. a -&gt; a -&gt; a -&gt; V3 a
 </span><span class="hs-number">0</span></span><span>           </span><span class="annot"><span class="annottext">a
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
 </span><span id="line-44"></span><span>    </span><span class="hs-comment">-- | Combine all rotation matrix into one</span><span>
-</span><span id="line-45"></span><span>    </span><span id="local-6989586621679114405"><span class="annot"><span class="annottext">rotationMat :: Rotation
-</span><a href="#local-6989586621679114405"><span class="hs-identifier hs-var hs-var">rotationMat</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Rotation
+</span><span id="line-45"></span><span>    </span><span id="local-6989586621679118020"><span class="annot"><span class="annottext">rotationMat :: Rotation
+</span><a href="#local-6989586621679118020"><span class="hs-identifier hs-var hs-var">rotationMat</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Rotation
 forall a. Floating a =&gt; a -&gt; V3 (V3 a)
-</span><a href="#local-6989586621679114403"><span class="hs-identifier hs-var">rotation_x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position
-</span><a href="#local-6989586621679114408"><span class="hs-identifier hs-var">diff</span></a></span><span class="annot"><span class="annottext">Position -&gt; Getting Float Position Float -&gt; Float
+</span><a href="#local-6989586621679118018"><span class="hs-identifier hs-var">rotation_x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679118023"><span class="hs-identifier hs-var">diff</span></a></span><span class="annot"><span class="annottext">Position -&gt; Getting Float Position Float -&gt; Float
 forall s a. s -&gt; Getting a s a -&gt; a
 </span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float Position Float
 forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
@@ -178,8 +178,8 @@ forall (m :: * -&gt; *) (t :: * -&gt; *) (n :: * -&gt; *) a.
 m (t a) -&gt; t (n a) -&gt; m (n a)
 </span><span class="hs-operator hs-var">!*!</span></span><span> </span><span class="annot"><span class="annottext">Float -&gt; Rotation
 forall a. Floating a =&gt; a -&gt; V3 (V3 a)
-</span><a href="#local-6989586621679114399"><span class="hs-identifier hs-var">rotation_y</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position
-</span><a href="#local-6989586621679114408"><span class="hs-identifier hs-var">diff</span></a></span><span class="annot"><span class="annottext">Position -&gt; Getting Float Position Float -&gt; Float
+</span><a href="#local-6989586621679118014"><span class="hs-identifier hs-var">rotation_y</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679118023"><span class="hs-identifier hs-var">diff</span></a></span><span class="annot"><span class="annottext">Position -&gt; Getting Float Position Float -&gt; Float
 forall s a. s -&gt; Getting a s a -&gt; a
 </span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float Position Float
 forall (t :: * -&gt; *) a. R2 t =&gt; Lens' (t a) a
@@ -189,8 +189,8 @@ forall (m :: * -&gt; *) (t :: * -&gt; *) (n :: * -&gt; *) a.
 m (t a) -&gt; t (n a) -&gt; m (n a)
 </span><span class="hs-operator hs-var">!*!</span></span><span> </span><span class="annot"><span class="annottext">Float -&gt; Rotation
 forall a. Floating a =&gt; a -&gt; V3 (V3 a)
-</span><a href="#local-6989586621679114397"><span class="hs-identifier hs-var">rotation_z</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position
-</span><a href="#local-6989586621679114408"><span class="hs-identifier hs-var">diff</span></a></span><span class="annot"><span class="annottext">Position -&gt; Getting Float Position Float -&gt; Float
+</span><a href="#local-6989586621679118012"><span class="hs-identifier hs-var">rotation_z</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Position
+</span><a href="#local-6989586621679118023"><span class="hs-identifier hs-var">diff</span></a></span><span class="annot"><span class="annottext">Position -&gt; Getting Float Position Float -&gt; Float
 forall s a. s -&gt; Getting a s a -&gt; a
 </span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float Position Float
 forall (t :: * -&gt; *) a. R3 t =&gt; Lens' (t a) a
