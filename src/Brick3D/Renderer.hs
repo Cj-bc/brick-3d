@@ -29,7 +29,7 @@ render' :: ThreeDState -> [((Int, Int), Char, Attr)]
 render' s =
   -- Convert to viewport coordinate
   let cam = s^.camera
-      focalLength = abs $ 1/(tan $ (cam^.hFov)/2)
+      focalLength = abs $ 1/(tan $ (pi/180)*(cam^.hFov)/2)
       -- Apply camera transform
       prims' = applyCameraTransform cam <$> s^.prims
       -- Convert to device coordinate
