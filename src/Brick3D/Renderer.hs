@@ -4,9 +4,12 @@ import Brick3D.Camera
 import Brick3D.Type
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Bool (bool)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Graphics.Vty.Attributes (Attr, defAttr)
+import Data.Map (Map)
+import qualified Data.Map as M
 import Lens.Micro.Platform
 import Linear.V2 (V2(..))
 import Linear.V3 (V3(..), _x, _y, _z, _xyz)
@@ -40,7 +43,11 @@ render' s =
   -- Geometry Construction
   -- Shading by using property
   -- Rasterize
-  in fold $ fmap (rasterize (canvasSize screen')) dcprims
+      -- | Convert 'Map' to list so that 'canvasSetMany' can treat
+      toCanvasPixels :: Map (Int, Int) (Char, Attr) -> [((Int, Int), Char, Attr)]
+      toCanvasPixels = M.foldlWithKey (\acc k v -> (k, v^._1, v^._2) : acc ) []
+  in  toCanvasPixels . fmap (^._2) . V.foldr mergeAttr mempty
+     $ fmap (rasterize (canvasSize screen')) dcprims
 
 -- | 'True' if given 'Primitive' is not clipped
 -- by far/near plane
@@ -92,22 +99,26 @@ applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !*
 -- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.position%~(\n -> n - cam^.position)))
   
 
+-- | Represents one Pixel
+type PixelAttr = (Char, Attr)
+
+-- | Merge two 'Map' of Pixels into one by comparing zBuffer
+mergeAttr :: Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr)
+mergeAttr m1 m2 = (M.intersectionWith (\a1 a2 -> bool a2 a1 (a1^._1 >= a2^._1)) m1 m2)
+                  <> m1 <> m2
+
 -- | Rasterize one 'DCPrimitive'
-rasterize :: (Int, Int) -> DCPrimitive -> [((Int, Int), Char, Attr)]
+rasterize :: (Int, Int) -> DCPrimitive -> Map (Int, Int) (Float, PixelAttr)
 rasterize (sx, sy) (DCPrimitive shape normal) =
   case shape of
     Point v ->
-      [(rasterizeVertex v
-       , '*'
-       , defAttr
-       )]
+      M.singleton (rasterizeVertex v) (v^.zBuffer, ('*', defAttr))
     tri@(Triangle v1 v2 v3) ->
       let outlineVertices = rasterizeLine v1 v3 <> rasterizeLine v1 v2 <> rasterizeLine v2 v3
-      in flip fmap outlineVertices $ \v ->
-                                       (rasterizeVertex v
-                                       , '.'
-                                       , defAttr
-                                       )
+      in M.fromList . flip fmap outlineVertices $ \v ->
+                                                    ((rasterizeVertex v)
+                                                    , (v^.zBuffer
+                                                      , ('*', defAttr)))
   where
     halfX = round $ (fromRational.toRational $ sx :: Float)/2
     halfY = round $ (fromRational.toRational $ sy :: Float)/2

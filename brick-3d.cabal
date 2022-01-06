@@ -42,6 +42,7 @@ library
     , linear
     , data-default
     , vty
+    , containers
   default-language: Haskell2010
 
 executable brick3D
