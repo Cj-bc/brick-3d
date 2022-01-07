@@ -5,20 +5,14 @@ import Brick3D.Type
 import Brick3D.Rasterization
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Bool (bool)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
-import Graphics.Vty.Attributes (Attr, defAttr)
-import Data.Map (Map)
-import qualified Data.Map as M
+import Graphics.Vty.Attributes (Attr)
 import Lens.Micro.Platform
-import Linear.V2 (V2(..))
 import Linear.V3 (V3(..), _x, _y, _z, _xyz)
 import Linear.V4 (V4(..))
 import Linear.Matrix (mkTransformationMat, (!*), identity)
 import Tart.Canvas
-import Data.Foldable (fold)
-import Linear.Vector ((^*), (^+^))
 
 -- | Renders 'ThreeDState' to one 'Tart.Canvas.Canvas',
 -- which will be shown in 'Widget'
@@ -92,5 +86,3 @@ applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !*
   where
     transformMatrix = mkTransformationMat (cam^.rotation) (- cam^.position) 
     conv324 (V3 x y z) = V4 x y z 1
--- applyCameraTransform :: Camera -> Primitive -> (Camera, Primitive)
--- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.position%~(\n -> n - cam^.position)))
