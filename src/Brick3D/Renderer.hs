@@ -2,6 +2,7 @@ module Brick3D.Renderer where
 import Brick3D.State
 import Brick3D.Camera
 import Brick3D.Type
+import Brick3D.Rasterization
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bool (bool)
@@ -99,39 +100,9 @@ applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !*
 -- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.position%~(\n -> n - cam^.position)))
   
 
--- | Represents one Pixel
-type PixelAttr = (Char, Attr)
 
 -- | Merge two 'Map' of Pixels into one by comparing zBuffer
 mergeAttr :: Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr)
 mergeAttr m1 m2 = (M.intersectionWith (\a1 a2 -> bool a2 a1 (a1^._1 >= a2^._1)) m1 m2)
                   <> m1 <> m2
 
--- | Rasterize one 'DCPrimitive'
-rasterize :: (Int, Int) -> DCPrimitive -> Map (Int, Int) (Float, PixelAttr)
-rasterize (sx, sy) (DCPrimitive shape normal) =
-  case shape of
-    Point v ->
-      M.singleton (rasterizeVertex v) (v^.zBuffer, ('*', defAttr))
-    tri@(Triangle v1 v2 v3) ->
-      let outlineVertices = rasterizeLine v1 v3 <> rasterizeLine v1 v2 <> rasterizeLine v2 v3
-      in M.fromList . flip fmap outlineVertices $ \v ->
-                                                    ((rasterizeVertex v)
-                                                    , (v^.zBuffer
-                                                      , ('*', defAttr)))
-  where
-    halfX = round $ (fromRational.toRational $ sx :: Float)/2
-    halfY = round $ (fromRational.toRational $ sy :: Float)/2
-    moveOriginToCenter (x, y) =  (x+halfX, y+halfY)
-    rasterizeVertex v = moveOriginToCenter ( round $ (fromInteger . toInteger $ sx) * v^.dcv_position._x
-                                           , - (round $ (fromInteger . toInteger $ sy) * v^.dcv_position._y)
-                                           )
-
--- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
---
--- JP: 与えられた 'begin' と 'end' を両端に持つ線分を構成する 'Vertex' を返します
-rasterizeLine :: DCVertex -> DCVertex -> [DCVertex]
-rasterizeLine begin end = let v = end^.dcv_position - begin^.dcv_position :: V2 Float
-                              formula t = (begin^.dcv_position) ^+^ (v ^* t)
-                              ts = fmap (/ 500) [0..500] :: [Float]
-                          in fmap (\t -> begin&dcv_position.~(formula t)) ts
