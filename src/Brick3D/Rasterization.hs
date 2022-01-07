@@ -2,6 +2,7 @@ module Brick3D.Rasterization where
 import Brick3D.Type
 
 import Data.Map (Map)
+import Data.Bool (bool)
 import qualified Data.Map as M
 import Graphics.Vty.Attributes (Attr, defAttr)
 import Lens.Micro.Platform
@@ -11,6 +12,20 @@ import Linear.Vector ((^*), (^+^))
 
   -- | Represents one Pixel
 type PixelAttr = (Char, Attr)
+
+-- | Merge two 'Map' of Pixels into one by comparing zBuffer
+mergeAttr :: Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr)
+mergeAttr m1 m2 = (M.intersectionWith (\a1 a2 -> bool a2 a1 (a1^._1 >= a2^._1)) m1 m2)
+                  <> m1 <> m2
+
+-- | Convert 'Map' to list so that 'canvasSetMany' can treat
+toCanvasPixels :: Map (Int, Int) (Char, Attr) -> [((Int, Int), Char, Attr)]
+toCanvasPixels = M.foldlWithKey (\acc k v -> (k, v^._1, v^._2) : acc ) []
+
+-- | Rasterize many of 'DCPrimitive's
+rasterizeMany :: (Foldable t, Functor t) => (Int, Int) -> t DCPrimitive -> [((Int, Int), Char, Attr)]
+rasterizeMany screenSize prims =
+  toCanvasPixels . fmap (^._2) . foldr mergeAttr mempty $ fmap (rasterize screenSize) prims
 
 -- | Rasterize one 'DCPrimitive'
 rasterize :: (Int, Int) -> DCPrimitive -> Map (Int, Int) (Float, PixelAttr)

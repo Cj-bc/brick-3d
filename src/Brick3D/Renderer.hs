@@ -44,11 +44,7 @@ render' s =
   -- Geometry Construction
   -- Shading by using property
   -- Rasterize
-      -- | Convert 'Map' to list so that 'canvasSetMany' can treat
-      toCanvasPixels :: Map (Int, Int) (Char, Attr) -> [((Int, Int), Char, Attr)]
-      toCanvasPixels = M.foldlWithKey (\acc k v -> (k, v^._1, v^._2) : acc ) []
-  in  toCanvasPixels . fmap (^._2) . V.foldr mergeAttr mempty
-     $ fmap (rasterize (canvasSize screen')) dcprims
+  in  rasterizeMany (canvasSize screen') dcprims
 
 -- | 'True' if given 'Primitive' is not clipped
 -- by far/near plane
@@ -98,11 +94,3 @@ applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !*
     conv324 (V3 x y z) = V4 x y z 1
 -- applyCameraTransform :: Camera -> Primitive -> (Camera, Primitive)
 -- applyCameraTransform cam prim = ((cam&position.~(V3 0 0 0)), (prim&vertices.position%~(\n -> n - cam^.position)))
-  
-
-
--- | Merge two 'Map' of Pixels into one by comparing zBuffer
-mergeAttr :: Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr)
-mergeAttr m1 m2 = (M.intersectionWith (\a1 a2 -> bool a2 a1 (a1^._1 >= a2^._1)) m1 m2)
-                  <> m1 <> m2
-
