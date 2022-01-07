@@ -59,8 +59,10 @@ makeLenses ''DCVertex
 
 -- | Convert 'Vertex' to 'DCVertex'
 fromVertex :: Vertex -> DCVertex
-fromVertex v = DCVertex (V2 (v^.v_position._x) (v^.v_position._y)) (v^.v_position._z)
-
+fromVertex v | v^.v_position._z == 0 = DCVertex dcposition 0
+             | otherwise            = DCVertex dcposition (abs $ 1 / v^.v_position._z)
+             where
+               dcposition = V2 (v^.v_position._x) (v^.v_position._y)
 
 -- | Define Primitive shapes.
 -- This would

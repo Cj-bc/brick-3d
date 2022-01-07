@@ -76,7 +76,7 @@ projectPrimitive focalLength prim =
 projectVertex :: Float -> Vertex -> DCVertex
 projectVertex focalLength v
   -- Avoid division by zero error
-  | v^.v_position._z == 0 = DCVertex (V2 (v^.v_position._x) (v^.v_position._y)) 0
+  | v^.v_position._z == 0 = fromVertex v
   | otherwise =
     let camera2screenVector = -focalLength
         percentage = camera2screenVector/(v^.(v_position._z))
