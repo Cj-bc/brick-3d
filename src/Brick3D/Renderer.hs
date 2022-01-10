@@ -33,7 +33,7 @@ render' s =
       -- Convert to device coordinate
       -- Also, calculate Normal for later use(e.g. shading)
       dcprims :: Vector DCPrimitive
-      dcprims = projectPrimitive focalLength <$> V.filter (farNearClip cam) prims'
+      dcprims = V.catMaybes $ projectPrimitive focalLength <$> V.filter (farNearClip cam) prims'
       screen' = s^.screen
   -- Geometry Construction
   -- Shading by using property
@@ -59,19 +59,22 @@ farNearClip cam target = let camZ = cam^.position._z :: Float
 
 
 -- | Project one 'Primitive' to device coordinate
-projectPrimitive :: Float -> Primitive -> DCPrimitive
+projectPrimitive :: Float -> Primitive -> Maybe DCPrimitive
 projectPrimitive focalLength prim =
   toDCPrimitive (projectVertex focalLength) prim
 
 -- | Project one vertex to device coordinate
-projectVertex :: Float -> Vertex -> DCVertex
+projectVertex :: Float -> Vertex -> Maybe DCVertex
 projectVertex focalLength v
+  -- focial length <0 means "screen is behind the Camera",
+  -- and I don't have any way to render it.
+  | focalLength <= 0 = Nothing
   -- Avoid division by zero error
-  | v^.v_position._z == 0 = fromVertex v
+  | v^.v_position._z == 0 = pure $ fromVertex v
   | otherwise =
     let camera2screenVector = -focalLength
         percentage = camera2screenVector/(v^.(v_position._z))
-    in fromVertex $ v&v_position._x%~(fixMinusZero . (* percentage))&v_position._y%~(fixMinusZero . (* percentage))
+    in pure . fromVertex $ v&v_position._x%~(fixMinusZero . (* percentage))&v_position._y%~(fixMinusZero . (* percentage))
   where
     -- | Convert -0.0 to 0
     -- It's same in most cases,
@@ -86,3 +89,5 @@ applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !*
   where
     transformMatrix = mkTransformationMat (cam^.rotation) (- cam^.position) 
     conv324 (V3 x y z) = V4 x y z 1
+
+  

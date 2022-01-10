@@ -95,8 +95,8 @@ vertices f (Triangle v1 v2 v3) = Triangle <$> f v1 <*> f v2 <*> f v3
 -- | __THIS ISN'T 'Traversal'__
 --
 -- Convert 'Primitive' to 'DCPrimitive'
-toDCPrimitive :: (Vertex -> DCVertex) -> Primitive -> DCPrimitive
+toDCPrimitive :: Applicative f => (Vertex -> f DCVertex) -> Primitive -> f DCPrimitive
 toDCPrimitive f p@(Point v) = let norm = calcNormal p
-                              in DCPrimitive (Point (f v)) norm
+                              in flip DCPrimitive norm <$> (Point <$> f v)
 toDCPrimitive f tri@(Triangle v1 v2 v3) = let norm = calcNormal tri
-                                          in DCPrimitive (Triangle (f v1) (f v2) (f v3)) norm
+                                          in flip DCPrimitive norm <$> (Triangle <$> f v1 <*> f v2 <*> f v3)
