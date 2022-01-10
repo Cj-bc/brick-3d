@@ -46,18 +46,25 @@ almostEqualVertex :: Vertex -> Vertex -> Bool
 almostEqualVertex (Vertex p1) (Vertex p2) = all (uncurry almostEqual) $ zip (fmap (p1^.) [_x,_y,_z]) (fmap (p1^.) [_x,_y,_z])
 
 
+withNonzero :: (Testable prop) => (Float -> prop) -> Property
+withNonzero = forAll (arbitrary `suchThat` (> 0) :: Gen Float)
 
 projectVertexSpec =
   describe "projectVertex" $ do
-    context "when vertex is (0,0,z)" $
-        prop "should be (0, 0) on screen coordinate no matter about focalLength" $ \f z ->
-            projectVertex f (Vertex $ V3 0 0 z) `shouldBe` (DCVertex (V2 0 0) (abs $ 1/z))
+    context "when focal length is valid(f > 0)" $ do
+        context "when z is 0" $
+            prop "should use '0' as depth" $ withNonzero $ \f x y ->
+                projectVertex f (Vertex $ V3 x y 0) `shouldBe` (Just $ DCVertex (V2 x y) 0)
 
-    context "when vertex is (x, y, 0)" $
-        prop "should stay as is" $ \f x y ->
-            projectVertex f (Vertex $ V3 x y 0) `shouldBe` (DCVertex (V2 x y) 0)
+        context "when vertex is (0,0,z)" $
+            prop "should be (0, 0) on screen coordinate"
+                $ withNonzero $ \f ->
+                    withNonzero $ \z ->
+                        projectVertex f (Vertex $ V3 0 0 z) `shouldBe` (Just $ DCVertex (V2 0 0) (abs $ 1/z))
 
-    -- it "be 1 at" $ projectVertex f (Vertex $ V3 0 0 0)
+    context "when focal Length is invalid(f <= 0)" $
+      it "should return Nothing" $
+        projectVertex 0 (Vertex $ V3 0 0 1) `shouldBe` Nothing
 
 applyCameraTransformSpec =
   describe "applyCameraTransform" $ do
