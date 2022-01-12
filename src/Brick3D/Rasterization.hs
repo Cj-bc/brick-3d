@@ -95,7 +95,7 @@ isInsideOfTri candidate (v1, v2, v3)
     -- 同じ側にあれば, その直線と 'cand' 及び 'a' の内積の符号が等しくなる=0以上になる
     -- はずなので判定ができる。
     oneLineTest :: V2 Float -> (V2 Float, V2 Float, V2 Float) -> Bool
-    oneLineTest cand (vs, ve, a) = (vl `dot` cand)*(vl `dot` a) >= 0 -- 線上にある場合も含めている
+    oneLineTest cand (vs, ve, a) = (vl `dot` (cand - vs))*(vl `dot` (a - vs)) >= 0 -- 線上にある場合も含めている
       where
         -- | JP: 確かめたい対象の直線ベクトル
         line = ve - vs
