@@ -35,11 +35,11 @@ rasterize :: (Int, Int) -> DCPrimitive -> Map (Int, Int) (Float, PixelAttr)
 rasterize (sx, sy) (DCPrimitive shape normal) =
   case shape of
     Point v ->
-      M.singleton (toTuple $ mapVertexIntoScreen v) (v^.zBuffer, ('*', defAttr))
+      M.singleton (toTuple $ screenMapping v) (v^.zBuffer, ('*', defAttr))
     tri@(Triangle v1 v2 v3) ->
-      let v1' = mapVertexIntoScreen v1
-          v2' = mapVertexIntoScreen v2
-          v3' = mapVertexIntoScreen v3
+      let v1' = screenMapping v1
+          v2' = screenMapping v2
+          v3' = screenMapping v3
           wireframeVertices = rasterizeLine v1' v3' <> rasterizeLine v1' v2' <> rasterizeLine v2' v3'
           fill = fillTriangle v1' v2' v3'
           toOutput :: Char -> Vector DCVertex -> Vector ((Int,Int), (Float, PixelAttr))
@@ -57,11 +57,11 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
     moveOriginToCenter :: V2 Float -> V2 Float
     moveOriginToCenter (V2 x y) =  V2 (x+halfX) (y+halfY)
 
-    mapVertexIntoScreen :: DCVertex -> DCVertex
-    mapVertexIntoScreen v = v&dcv_position%~mapVertexIntoScreen'
+    screenMapping :: DCVertex -> DCVertex
+    screenMapping v = v&dcv_position%~screenMapping'
 
-    mapVertexIntoScreen' :: V2 Float -> V2 Float
-    mapVertexIntoScreen' v = moveOriginToCenter
+    screenMapping' :: V2 Float -> V2 Float
+    screenMapping' v = moveOriginToCenter
                          $ V2 ((fromInteger . toInteger $ sx) * v^._x)
                          (-((fromInteger . toInteger $ sy) * v^._y))
 
