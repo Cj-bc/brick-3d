@@ -70,10 +70,10 @@ fillTriangle v1 v2 v3 = flip (dcv_position.~) v1
                         <$> V.filter (`isInsideOfTri` (v1^.dcv_position, v2^.dcv_position, v3^.dcv_position))
                         boundaryRectVertices
   where
-    maxX = foldr1 max $ (^.dcv_position._x) <$> [v1, v2, v3]
-    minX = foldr1 min $ (^.dcv_position._x) <$> [v1, v2, v3]
-    maxY = foldr1 max $ (^.dcv_position._y) <$> [v1, v2, v3]
-    minY = foldr1 min $ (^.dcv_position._y) <$> [v1, v2, v3]
+    maxX = maximum $ (^.dcv_position._x) <$> [v1, v2, v3]
+    minX = minimum $ (^.dcv_position._x) <$> [v1, v2, v3]
+    maxY = maximum $ (^.dcv_position._y) <$> [v1, v2, v3]
+    minY = minimum $ (^.dcv_position._y) <$> [v1, v2, v3]
     boundaryRectVertices = V.fromList [V2 (x/100) (y/100) | x <- [(minX*100)..(maxX*100)]
                                                           , y <- [(minY*100)..(maxY*100)]]
 
