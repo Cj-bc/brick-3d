@@ -88,8 +88,8 @@ fillTriangle v1 v2 v3 = flip (dcv_position.~) v1
     minX = minimum $ (^.dcv_position._x) <$> [v1, v2, v3]
     maxY = maximum $ (^.dcv_position._y) <$> [v1, v2, v3]
     minY = minimum $ (^.dcv_position._y) <$> [v1, v2, v3]
-    boundaryRectVertices = V.fromList [V2 (x/100) (y/100) | x <- [(minX*100)..(maxX*100)]
-                                                          , y <- [(minY*100)..(maxY*100)]]
+    boundaryRectVertices = V.fromList [V2 x y | x <- [minX..maxX]
+                                              , y <- [minY..maxY]]
 
 -- | 'True' if given coordinate is within given Triangle
 --
