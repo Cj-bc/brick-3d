@@ -38,7 +38,8 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
       M.singleton (rasterizeVertex v) (v^.zBuffer, ('*', defAttr))
     tri@(Triangle v1 v2 v3) ->
       let outlineVertices = rasterizeLine v1 v3 <> rasterizeLine v1 v2 <> rasterizeLine v2 v3
-      in M.fromList . V.toList . flip fmap outlineVertices $ \v ->
+          fill = fillTriangle v1 v2 v3
+      in M.fromList . V.toList . flip fmap (outlineVertices <> fill) $ \v ->
                                                     ((rasterizeVertex v)
                                                     , (v^.zBuffer
                                                       , ('*', defAttr)))
