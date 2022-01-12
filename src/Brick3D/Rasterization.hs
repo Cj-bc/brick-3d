@@ -38,7 +38,7 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
       M.singleton (rasterizeVertex v) (v^.zBuffer, ('*', defAttr))
     tri@(Triangle v1 v2 v3) ->
       let outlineVertices = rasterizeLine v1 v3 <> rasterizeLine v1 v2 <> rasterizeLine v2 v3
-      in M.fromList . flip fmap outlineVertices $ \v ->
+      in M.fromList . V.toList . flip fmap outlineVertices $ \v ->
                                                     ((rasterizeVertex v)
                                                     , (v^.zBuffer
                                                       , ('*', defAttr)))
@@ -53,10 +53,10 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
 -- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
 --
 -- JP: 与えられた 'begin' と 'end' を両端に持つ線分を構成する 'Vertex' を返します
-rasterizeLine :: DCVertex -> DCVertex -> [DCVertex]
+rasterizeLine :: DCVertex -> DCVertex -> Vector DCVertex
 rasterizeLine begin end = let v = end^.dcv_position - begin^.dcv_position :: V2 Float
                               formula t = (begin^.dcv_position) ^+^ (v ^* t)
-                              ts = fmap (/ 500) [0..500] :: [Float]
+                              ts = fmap (/ 500) (V.fromList [0..500]) :: Vector Float
                           in fmap (\t -> begin&dcv_position.~(formula t)) ts
 
 -- | Returns 'DCVertex's that constructs one filled-triangle
