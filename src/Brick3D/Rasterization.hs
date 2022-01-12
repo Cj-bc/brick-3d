@@ -35,21 +35,35 @@ rasterize :: (Int, Int) -> DCPrimitive -> Map (Int, Int) (Float, PixelAttr)
 rasterize (sx, sy) (DCPrimitive shape normal) =
   case shape of
     Point v ->
-      M.singleton (rasterizeVertex v) (v^.zBuffer, ('*', defAttr))
+      M.singleton (toTuple $ mapVertexIntoScreen v) (v^.zBuffer, ('*', defAttr))
     tri@(Triangle v1 v2 v3) ->
-      let outlineVertices = rasterizeLine v1 v3 <> rasterizeLine v1 v2 <> rasterizeLine v2 v3
-          fill = fillTriangle v1 v2 v3
-      in M.fromList . V.toList . flip fmap (outlineVertices <> fill) $ \v ->
-                                                    ((rasterizeVertex v)
-                                                    , (v^.zBuffer
-                                                      , ('*', defAttr)))
+      let v1' = mapVertexIntoScreen v1
+          v2' = mapVertexIntoScreen v2
+          v3' = mapVertexIntoScreen v3
+          wireframeVertices = rasterizeLine v1' v3' <> rasterizeLine v1' v2' <> rasterizeLine v2' v3'
+          fill = fillTriangle v1' v2' v3'
+          toOutput :: Char -> Vector DCVertex -> Vector ((Int,Int), (Float, PixelAttr))
+          toOutput c = fmap $ \v -> (toTuple v, (v^.zBuffer, (c, defAttr)))
+          fillOutput = toOutput 'B' fill
+          wireframeOutput = toOutput '*' wireframeVertices
+      in M.fromList . V.toList $ fillOutput <> wireframeOutput
   where
-    halfX = round $ (fromRational.toRational $ sx :: Float)/2
-    halfY = round $ (fromRational.toRational $ sy :: Float)/2
-    moveOriginToCenter (x, y) =  (x+halfX, y+halfY)
-    rasterizeVertex v = moveOriginToCenter ( round $ (fromInteger . toInteger $ sx) * v^.dcv_position._x
-                                           , - (round $ (fromInteger . toInteger $ sy) * v^.dcv_position._y)
-                                           )
+    halfX = fromInteger . toInteger $ sx `div` 2
+    halfY = fromInteger . toInteger $ sy `div` 2
+
+    toTuple :: DCVertex -> (Int, Int)
+    toTuple v = (round $ v^.dcv_position._x, round $ v^.dcv_position._y)
+
+    moveOriginToCenter :: V2 Float -> V2 Float
+    moveOriginToCenter (V2 x y) =  V2 (x+halfX) (y+halfY)
+
+    mapVertexIntoScreen :: DCVertex -> DCVertex
+    mapVertexIntoScreen v = v&dcv_position%~mapVertexIntoScreen'
+
+    mapVertexIntoScreen' :: V2 Float -> V2 Float
+    mapVertexIntoScreen' v = moveOriginToCenter
+                         $ V2 ((fromInteger . toInteger $ sx) * v^._x)
+                         (-((fromInteger . toInteger $ sy) * v^._y))
 
 -- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
 --
