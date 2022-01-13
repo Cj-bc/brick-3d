@@ -54,13 +54,13 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
     toTuple :: DCVertex -> (Int, Int)
     toTuple v = (round $ v^.dcv_position._x, round $ v^.dcv_position._y)
 
-    moveOriginToCenter :: V2 Float -> V2 Float
+    moveOriginToCenter :: DCPosition -> DCPosition
     moveOriginToCenter (V2 x y) =  V2 (x+halfX) (y+halfY)
 
     screenMapping :: DCVertex -> DCVertex
     screenMapping v = v&dcv_position%~screenMapping'
 
-    screenMapping' :: V2 Float -> V2 Float
+    screenMapping' :: DCPosition -> DCPosition
     screenMapping' v = moveOriginToCenter
                          $ V2 ((fromInteger . toInteger $ sx) * v^._x)
                          (-((fromInteger . toInteger $ sy) * v^._y))
@@ -101,7 +101,7 @@ fillTriangle v1 v2 v3 = flip (dcv_position.~) v1
 --
 -- JP: この関数は「三角形がきちんと三角形であるか」を考慮しません。
 -- (例えば: 頂点が一直線上に並んでしまっている, 複数の頂点が同じ位置にあるなど)
-isInsideOfTri :: V2 Float -> (V2 Float, V2 Float, V2 Float) -> Bool
+isInsideOfTri :: DCPosition -> (DCPosition, DCPosition, DCPosition) -> Bool
 isInsideOfTri candidate (v1, v2, v3)
   = all (oneLineTest candidate)  [(v1, v2, v3), (v2, v3, v1), (v3, v1, v2)]
   where
