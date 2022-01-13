@@ -65,14 +65,16 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
                          $ V2 ((fromInteger . toInteger $ sx) * v^._x)
                          (-((fromInteger . toInteger $ sy) * v^._y))
 
--- | 'Vertex's which constructs line begin at 'begin' and end at 'end'
+-- | 'DCVertex's which constructs line begin at 'begin' and end at 'end'
 --
--- JP: 与えられた 'begin' と 'end' を両端に持つ線分を構成する 'Vertex' を返します
+-- JP: 与えられた 'begin' と 'end' を両端に持つ線分を構成する 'DCVertex' を返します
 rasterizeLine :: DCVertex -> DCVertex -> Vector DCVertex
-rasterizeLine begin end = let v = end^.dcv_position - begin^.dcv_position :: V2 Float
-                              formula t = (begin^.dcv_position) ^+^ (v ^* t)
-                              ts = fmap (/ 500) (V.fromList [0..500]) :: Vector Float
-                          in fmap (\t -> begin&dcv_position.~(formula t)) ts
+rasterizeLine begin end = let begin' = begin^.dcv_position
+                              end' = end^.dcv_position
+                              v = end'-begin'
+                              y x = (v^._y/v^._x)*x
+                          in fmap (\x -> begin&dcv_position%~(+ V2 x (y x)))
+                             $ V.generate (round $ end'^._x-begin'^._x) (fromInteger.toInteger)
 
 -- | Returns 'DCVertex's that constructs one filled-triangle
 --
