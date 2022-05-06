@@ -42,54 +42,60 @@ rasterize (sx, sy) (DCPrimitive shape normal) =
           v3' = screenMapping v3
           wireframeVertices = rasterizeLine v1' v3' <> rasterizeLine v1' v2' <> rasterizeLine v2' v3'
           fill = fillTriangle v1' v2' v3'
-          toOutput :: Char -> Vector DCVertex -> Vector ((Int,Int), (Float, PixelAttr))
-          toOutput c = fmap $ \v -> (toTuple v, (v^.zBuffer, (c, defAttr)))
+          toOutput :: Char -> Vector SCVertex -> Vector ((Int,Int), (Float, PixelAttr))
+          toOutput c = fmap $ \v -> (toTuple v, (v^.depth, (c, defAttr)))
           fillOutput = toOutput 'B' fill
           wireframeOutput = toOutput '*' wireframeVertices
       in M.fromList . V.toList $ fillOutput <> wireframeOutput
   where
-    halfX = fromInteger . toInteger $ sx `div` 2
-    halfY = fromInteger . toInteger $ sy `div` 2
+    halfX = fromInteger . toInteger $ sx `div` 2 :: Int
+    halfY = fromInteger . toInteger $ sy `div` 2 :: Int
 
-    toTuple :: DCVertex -> (Int, Int)
-    toTuple v = (round $ v^.dcv_position._x, round $ v^.dcv_position._y)
+    toTuple :: SCVertex -> (Int, Int)
+    toTuple v = (v^.scv_position._x, v^.scv_position._y)
 
-    moveOriginToCenter :: DCPosition -> DCPosition
+    -- Be careful: This is __Not `DCPosition -> SCPosition'__
+    --   Because 'halfX' and 'halfY' are both 'SCPosition' value.
+    moveOriginToCenter :: SCPosition -> SCPosition
     moveOriginToCenter (V2 x y) =  V2 (x+halfX) (y+halfY)
 
-    screenMapping :: DCVertex -> DCVertex
-    screenMapping v = v&dcv_position%~screenMapping'
+    screenMapping :: DCVertex -> SCVertex
+    screenMapping v = let mappedPos = screenMapping' $ v^.dcv_position
+                      in SCVertex mappedPos (v^.zBuffer)
 
-    screenMapping' :: DCPosition -> DCPosition
+    screenMapping' :: DCPosition -> SCPosition
     screenMapping' v = moveOriginToCenter
-                         $ V2 ((fromInteger . toInteger $ sx) * v^._x)
-                         (-((fromInteger . toInteger $ sy) * v^._y))
+                         $ V2 (round $ (fromInteger . toInteger $ sx) * v^._x)
+                         (round $ -((fromInteger . toInteger $ sy) * v^._y))
 
 -- | 'DCVertex's which constructs line begin at 'begin' and end at 'end'
 --
 -- JP: 与えられた 'begin' と 'end' を両端に持つ線分を構成する 'DCVertex' を返します
-rasterizeLine :: DCVertex -> DCVertex -> Vector DCVertex
-rasterizeLine begin end = let begin' = begin^.dcv_position
-                              end' = end^.dcv_position
+rasterizeLine :: SCVertex -> SCVertex -> Vector SCVertex
+rasterizeLine begin end = let begin' = begin^.scv_position
+                              end' = end^.scv_position
                               v = end'-begin'
-                              y x = (v^._y/v^._x)*x
-                          in fmap (\x -> begin&dcv_position%~(+ V2 x (y x)))
-                             $ V.generate (round $ end'^._x-begin'^._x) (fromInteger.toInteger)
+                              y :: Int -> Int
+                              y x = round $ ((fromRational . toRational $ v^._y)
+                                             /(fromRational . toRational $ v^._x :: Float))
+                                    *fromIntegral x
+                          in fmap (\x -> begin&scv_position%~(+ V2 x (y x)))
+                             $ V.generate (end'^._x-begin'^._x) (fromInteger.toInteger)
 
 -- | Returns 'DCVertex's that constructs one filled-triangle
 --
 -- Note that depth of those 'DCVertex's are not calculated properly.
 -- Currently it inherits depth of 'v1'
 -- I want to fix this later.
-fillTriangle :: DCVertex -> DCVertex -> DCVertex -> Vector DCVertex
-fillTriangle v1 v2 v3 = flip (dcv_position.~) v1
-                        <$> V.filter (`isInsideOfTri` (v1^.dcv_position, v2^.dcv_position, v3^.dcv_position))
+fillTriangle :: SCVertex -> SCVertex -> SCVertex -> Vector SCVertex
+fillTriangle v1 v2 v3 = flip (scv_position.~) v1
+                        <$> V.filter (`isInsideOfTri` (v1^.scv_position, v2^.scv_position, v3^.scv_position))
                         boundaryRectVertices
   where
-    maxX = maximum $ (^.dcv_position._x) <$> [v1, v2, v3]
-    minX = minimum $ (^.dcv_position._x) <$> [v1, v2, v3]
-    maxY = maximum $ (^.dcv_position._y) <$> [v1, v2, v3]
-    minY = minimum $ (^.dcv_position._y) <$> [v1, v2, v3]
+    maxX = maximum $ (^.scv_position._x) <$> [v1, v2, v3]
+    minX = minimum $ (^.scv_position._x) <$> [v1, v2, v3]
+    maxY = maximum $ (^.scv_position._y) <$> [v1, v2, v3]
+    minY = minimum $ (^.scv_position._y) <$> [v1, v2, v3]
     boundaryRectVertices = V.fromList [V2 x y | x <- [minX..maxX]
                                               , y <- [minY..maxY]]
 
@@ -101,7 +107,7 @@ fillTriangle v1 v2 v3 = flip (dcv_position.~) v1
 --
 -- JP: この関数は「三角形がきちんと三角形であるか」を考慮しません。
 -- (例えば: 頂点が一直線上に並んでしまっている, 複数の頂点が同じ位置にあるなど)
-isInsideOfTri :: DCPosition -> (DCPosition, DCPosition, DCPosition) -> Bool
+isInsideOfTri :: SCPosition -> (SCPosition, SCPosition, SCPosition) -> Bool
 isInsideOfTri candidate (v1, v2, v3)
   = all (oneLineTest candidate)  [(v1, v2, v3), (v2, v3, v1), (v3, v1, v2)]
   where
@@ -110,7 +116,9 @@ isInsideOfTri candidate (v1, v2, v3)
     -- JP: 'cand' と 'a' が, vs,ve を両端に持つ直線の同じ側にあるかを判定する。
     -- 同じ側にあれば, その直線と 'cand' 及び 'a' の内積の符号が等しくなる=0以上になる
     -- はずなので判定ができる。
-    oneLineTest :: V2 Float -> (V2 Float, V2 Float, V2 Float) -> Bool
+    --
+    -- TODO: Float判定をした方が精度が良い？
+    oneLineTest :: V2 Int -> (V2 Int, V2 Int, V2 Int) -> Bool
     oneLineTest cand (vs, ve, a) = (vl `dot` (cand - vs))*(vl `dot` (a - vs)) >= 0 -- 線上にある場合も含めている
       where
         -- | JP: 確かめたい対象の直線ベクトル
