@@ -27,7 +27,7 @@ render' :: ThreeDState -> [((Int, Int), Char, Attr)]
 render' s =
   -- Convert to viewport coordinate
   let cam = s^.camera
-      focalLength = abs $ 1/(tan $ (pi/180)*(cam^.hFov)/2)
+      focalLength = abs $ 1/tan ((pi/180)*(cam^.hFov)/2)
       -- Apply camera transform
       prims' = applyCameraTransform cam <$> s^.prims
       -- Convert to device coordinate
@@ -60,8 +60,7 @@ farNearClip cam target = let camZ = cam^.position._z :: Float
 
 -- | Project one 'Primitive' to device coordinate
 projectPrimitive :: Float -> Primitive -> Maybe DCPrimitive
-projectPrimitive focalLength prim =
-  toDCPrimitive (projectVertex focalLength) prim
+projectPrimitive focalLength = toDCPrimitive (projectVertex focalLength)
 
 -- | Project one vertex to device coordinate
 projectVertex :: Float -> Vertex -> Maybe DCVertex
@@ -85,7 +84,7 @@ projectVertex focalLength v
 
 
 applyCameraTransform :: Camera -> Primitive -> Primitive
-applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !* (conv324 n))^._xyz)
+applyCameraTransform cam = over (vertices.v_position) (\n -> (transformMatrix !* conv324 n)^._xyz)
   where
     transformMatrix = mkTransformationMat (cam^.rotation) (- cam^.position) 
     conv324 (V3 x y z) = V4 x y z 1
