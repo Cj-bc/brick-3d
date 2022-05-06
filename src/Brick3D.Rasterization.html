@@ -1,0 +1,795 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Brick3D.Rasterization</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-2"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Brick3D.Type.html"><span class="hs-identifier">Brick3D.Type</span></a></span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Map</span></span><span class="hs-special">)</span><span>
+</span><span id="line-5"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Bool</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">bool</span></span><span class="hs-special">)</span><span>
+</span><span id="line-6"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Vector</span></span><span class="hs-special">)</span><span>
+</span><span id="line-7"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">V</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">M</span></span><span>
+</span><span id="line-9"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Graphics.Vty.Attributes</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Attr</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">defAttr</span></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Lens.Micro.Platform</span></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.V2</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">V2</span></span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.V3</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">_x</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_y</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">_z</span></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.Vector</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-operator">(^*)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(^+^)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Linear.Metric</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">dot</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">distance</span></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-comment">-- | Represents one Pixel</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">type</span><span> </span><span id="PixelAttr"><span class="annot"><a href="Brick3D.Rasterization.html#PixelAttr"><span class="hs-identifier hs-var">PixelAttr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attr</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-comment">-- | Merge two 'Map' of Pixels into one by comparing zBuffer</span><span>
+</span><span id="line-20"></span><span class="annot"><a href="Brick3D.Rasterization.html#mergeAttr"><span class="hs-identifier hs-type">mergeAttr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Brick3D.Rasterization.html#PixelAttr"><span class="hs-identifier hs-type">PixelAttr</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Brick3D.Rasterization.html#PixelAttr"><span class="hs-identifier hs-type">PixelAttr</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Brick3D.Rasterization.html#PixelAttr"><span class="hs-identifier hs-type">PixelAttr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span id="mergeAttr"><span class="annot"><span class="annottext">mergeAttr :: Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+</span><a href="Brick3D.Rasterization.html#mergeAttr"><span class="hs-identifier hs-var hs-var">mergeAttr</span></a></span></span><span> </span><span id="local-6989586621679121496"><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+</span><a href="#local-6989586621679121496"><span class="hs-identifier hs-var">m1</span></a></span></span><span> </span><span id="local-6989586621679121495"><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+</span><a href="#local-6989586621679121495"><span class="hs-identifier hs-var">m2</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((Float, PixelAttr) -&gt; (Float, PixelAttr) -&gt; (Float, PixelAttr))
+-&gt; Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+forall k a b c.
+Ord k =&gt;
+(a -&gt; b -&gt; c) -&gt; Map k a -&gt; Map k b -&gt; Map k c
+</span><span class="hs-identifier hs-var">M.intersectionWith</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679121493"><span class="annot"><span class="annottext">(Float, PixelAttr)
+</span><a href="#local-6989586621679121493"><span class="hs-identifier hs-var">a1</span></a></span></span><span> </span><span id="local-6989586621679121492"><span class="annot"><span class="annottext">(Float, PixelAttr)
+</span><a href="#local-6989586621679121492"><span class="hs-identifier hs-var">a2</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Float, PixelAttr)
+-&gt; (Float, PixelAttr) -&gt; Bool -&gt; (Float, PixelAttr)
+forall a. a -&gt; a -&gt; Bool -&gt; a
+</span><span class="hs-identifier hs-var">bool</span></span><span> </span><span class="annot"><span class="annottext">(Float, PixelAttr)
+</span><a href="#local-6989586621679121492"><span class="hs-identifier hs-var">a2</span></a></span><span> </span><span class="annot"><span class="annottext">(Float, PixelAttr)
+</span><a href="#local-6989586621679121493"><span class="hs-identifier hs-var">a1</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Float, PixelAttr)
+</span><a href="#local-6989586621679121493"><span class="hs-identifier hs-var">a1</span></a></span><span class="annot"><span class="annottext">(Float, PixelAttr)
+-&gt; Getting Float (Float, PixelAttr) Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float (Float, PixelAttr) Float
+forall s t a b. Field1 s t a b =&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">_1</span></span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">(Float, PixelAttr)
+</span><a href="#local-6989586621679121492"><span class="hs-identifier hs-var">a2</span></a></span><span class="annot"><span class="annottext">(Float, PixelAttr)
+-&gt; Getting Float (Float, PixelAttr) Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float (Float, PixelAttr) Float
+forall s t a b. Field1 s t a b =&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">_1</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+</span><a href="#local-6989586621679121496"><span class="hs-identifier hs-var">m1</span></a></span><span> </span><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+</span><a href="#local-6989586621679121495"><span class="hs-identifier hs-var">m2</span></a></span><span>
+</span><span id="line-22"></span><span>                  </span><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+</span><a href="#local-6989586621679121496"><span class="hs-identifier hs-var">m1</span></a></span><span> </span><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+</span><a href="#local-6989586621679121495"><span class="hs-identifier hs-var">m2</span></a></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-comment">-- | Convert 'Map' to list so that 'canvasSetMany' can treat</span><span>
+</span><span id="line-25"></span><span class="annot"><a href="Brick3D.Rasterization.html#toCanvasPixels"><span class="hs-identifier hs-type">toCanvasPixels</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attr</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attr</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-26"></span><span id="toCanvasPixels"><span class="annot"><span class="annottext">toCanvasPixels :: Map (Int, Int) PixelAttr -&gt; [((Int, Int), Char, Attr)]
+</span><a href="Brick3D.Rasterization.html#toCanvasPixels"><span class="hs-identifier hs-var hs-var">toCanvasPixels</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([((Int, Int), Char, Attr)]
+ -&gt; (Int, Int) -&gt; PixelAttr -&gt; [((Int, Int), Char, Attr)])
+-&gt; [((Int, Int), Char, Attr)]
+-&gt; Map (Int, Int) PixelAttr
+-&gt; [((Int, Int), Char, Attr)]
+forall a k b. (a -&gt; k -&gt; b -&gt; a) -&gt; a -&gt; Map k b -&gt; a
+</span><span class="hs-identifier hs-var">M.foldlWithKey</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679121487"><span class="annot"><span class="annottext">[((Int, Int), Char, Attr)]
+</span><a href="#local-6989586621679121487"><span class="hs-identifier hs-var">acc</span></a></span></span><span> </span><span id="local-6989586621679121486"><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679121486"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span id="local-6989586621679121485"><span class="annot"><span class="annottext">PixelAttr
+</span><a href="#local-6989586621679121485"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679121486"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">PixelAttr
+</span><a href="#local-6989586621679121485"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">PixelAttr -&gt; Getting Char PixelAttr Char -&gt; Char
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Char PixelAttr Char
+forall s t a b. Field1 s t a b =&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">_1</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">PixelAttr
+</span><a href="#local-6989586621679121485"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">PixelAttr -&gt; Getting Attr PixelAttr Attr -&gt; Attr
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Attr PixelAttr Attr
+forall s t a b. Field2 s t a b =&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">_2</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((Int, Int), Char, Attr)
+-&gt; [((Int, Int), Char, Attr)] -&gt; [((Int, Int), Char, Attr)]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">[((Int, Int), Char, Attr)]
+</span><a href="#local-6989586621679121487"><span class="hs-identifier hs-var">acc</span></a></span><span> </span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-comment">-- | Rasterize many of 'DCPrimitive's</span><span>
+</span><span id="line-29"></span><span id="local-6989586621679121483"><span class="annot"><a href="Brick3D.Rasterization.html#rasterizeMany"><span class="hs-identifier hs-type">rasterizeMany</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Foldable</span></span><span> </span><span class="annot"><a href="#local-6989586621679121483"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="annot"><a href="#local-6989586621679121483"><span class="hs-identifier hs-type">t</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679121483"><span class="hs-identifier hs-type">t</span></a></span><span> </span><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-type">DCPrimitive</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Attr</span></span><span class="hs-special">)</span><span class="hs-special">]</span></span><span>
+</span><span id="line-30"></span><span id="rasterizeMany"><span class="annot"><span class="annottext">rasterizeMany :: (Int, Int) -&gt; t DCPrimitive -&gt; [((Int, Int), Char, Attr)]
+</span><a href="Brick3D.Rasterization.html#rasterizeMany"><span class="hs-identifier hs-var hs-var">rasterizeMany</span></a></span></span><span> </span><span id="local-6989586621679121481"><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679121481"><span class="hs-identifier hs-var">screenSize</span></a></span></span><span> </span><span id="local-6989586621679121480"><span class="annot"><span class="annottext">t DCPrimitive
+</span><a href="#local-6989586621679121480"><span class="hs-identifier hs-var">prims</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-31"></span><span>  </span><span class="annot"><span class="annottext">Map (Int, Int) PixelAttr -&gt; [((Int, Int), Char, Attr)]
+</span><a href="Brick3D.Rasterization.html#toCanvasPixels"><span class="hs-identifier hs-var">toCanvasPixels</span></a></span><span> </span><span class="annot"><span class="annottext">(Map (Int, Int) PixelAttr -&gt; [((Int, Int), Char, Attr)])
+-&gt; (t (Map (Int, Int) (Float, PixelAttr))
+    -&gt; Map (Int, Int) PixelAttr)
+-&gt; t (Map (Int, Int) (Float, PixelAttr))
+-&gt; [((Int, Int), Char, Attr)]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">((Float, PixelAttr) -&gt; PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr) -&gt; Map (Int, Int) PixelAttr
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Float, PixelAttr)
+-&gt; Getting PixelAttr (Float, PixelAttr) PixelAttr -&gt; PixelAttr
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting PixelAttr (Float, PixelAttr) PixelAttr
+forall s t a b. Field2 s t a b =&gt; Lens s t a b
+</span><span class="hs-identifier hs-var">_2</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Map (Int, Int) (Float, PixelAttr) -&gt; Map (Int, Int) PixelAttr)
+-&gt; (t (Map (Int, Int) (Float, PixelAttr))
+    -&gt; Map (Int, Int) (Float, PixelAttr))
+-&gt; t (Map (Int, Int) (Float, PixelAttr))
+-&gt; Map (Int, Int) PixelAttr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Map (Int, Int) (Float, PixelAttr)
+ -&gt; Map (Int, Int) (Float, PixelAttr)
+ -&gt; Map (Int, Int) (Float, PixelAttr))
+-&gt; Map (Int, Int) (Float, PixelAttr)
+-&gt; t (Map (Int, Int) (Float, PixelAttr))
+-&gt; Map (Int, Int) (Float, PixelAttr)
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+-&gt; Map (Int, Int) (Float, PixelAttr)
+</span><a href="Brick3D.Rasterization.html#mergeAttr"><span class="hs-identifier hs-var">mergeAttr</span></a></span><span> </span><span class="annot"><span class="annottext">Map (Int, Int) (Float, PixelAttr)
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="annot"><span class="annottext">(t (Map (Int, Int) (Float, PixelAttr))
+ -&gt; [((Int, Int), Char, Attr)])
+-&gt; t (Map (Int, Int) (Float, PixelAttr))
+-&gt; [((Int, Int), Char, Attr)]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(DCPrimitive -&gt; Map (Int, Int) (Float, PixelAttr))
+-&gt; t DCPrimitive -&gt; t (Map (Int, Int) (Float, PixelAttr))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Int, Int) -&gt; DCPrimitive -&gt; Map (Int, Int) (Float, PixelAttr)
+</span><a href="Brick3D.Rasterization.html#rasterize"><span class="hs-identifier hs-var">rasterize</span></a></span><span> </span><span class="annot"><span class="annottext">(Int, Int)
+</span><a href="#local-6989586621679121481"><span class="hs-identifier hs-var">screenSize</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">t DCPrimitive
+</span><a href="#local-6989586621679121480"><span class="hs-identifier hs-var">prims</span></a></span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span class="hs-comment">-- | Rasterize one 'DCPrimitive'</span><span>
+</span><span id="line-34"></span><span class="annot"><a href="Brick3D.Rasterization.html#rasterize"><span class="hs-identifier hs-type">rasterize</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-type">DCPrimitive</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Brick3D.Rasterization.html#PixelAttr"><span class="hs-identifier hs-type">PixelAttr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span id="rasterize"><span class="annot"><span class="annottext">rasterize :: (Int, Int) -&gt; DCPrimitive -&gt; Map (Int, Int) (Float, PixelAttr)
+</span><a href="Brick3D.Rasterization.html#rasterize"><span class="hs-identifier hs-var hs-var">rasterize</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679121476"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121476"><span class="hs-identifier hs-var">sx</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679121475"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121475"><span class="hs-identifier hs-var">sy</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#DCPrimitive"><span class="hs-identifier hs-type">DCPrimitive</span></a></span><span> </span><span id="local-6989586621679121473"><span class="annot"><span class="annottext">PrimitiveBase DCVertex
+</span><a href="#local-6989586621679121473"><span class="hs-identifier hs-var">shape</span></a></span></span><span> </span><span id="local-6989586621679121472"><span class="annot"><span class="annottext">Normal
+</span><a href="#local-6989586621679121472"><span class="hs-identifier hs-var">normal</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">PrimitiveBase DCVertex
+</span><a href="#local-6989586621679121473"><span class="hs-identifier hs-var">shape</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Brick3D.Type.html#Point"><span class="hs-identifier hs-type">Point</span></a></span><span> </span><span id="local-6989586621679121470"><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121470"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-38"></span><span>      </span><span class="annot"><span class="annottext">(Int, Int)
+-&gt; (Float, PixelAttr) -&gt; Map (Int, Int) (Float, PixelAttr)
+forall k a. k -&gt; a -&gt; Map k a
+</span><span class="hs-identifier hs-var">M.singleton</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex -&gt; (Int, Int)
+</span><a href="#local-6989586621679121468"><span class="hs-identifier hs-var">toTuple</span></a></span><span> </span><span class="annot"><span class="annottext">(SCVertex -&gt; (Int, Int)) -&gt; SCVertex -&gt; (Int, Int)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DCVertex -&gt; SCVertex
+</span><a href="#local-6989586621679121467"><span class="hs-identifier hs-var">screenMapping</span></a></span><span> </span><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121470"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121470"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">DCVertex -&gt; Getting Float DCVertex Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float DCVertex Float
+Lens' DCVertex Float
+</span><a href="Brick3D.Type.html#zBuffer"><span class="hs-identifier hs-var">zBuffer</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'*'</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Attr
+</span><span class="hs-identifier hs-var">defAttr</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>    </span><span id="local-6989586621679121465"><span class="annot"><span class="annottext">tri :: PrimitiveBase DCVertex
+</span><a href="#local-6989586621679121465"><span class="hs-identifier hs-var">tri</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#Triangle"><span class="hs-identifier hs-type">Triangle</span></a></span><span> </span><span id="local-6989586621679121463"><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121463"><span class="hs-identifier hs-var">v1</span></a></span></span><span> </span><span id="local-6989586621679121462"><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121462"><span class="hs-identifier hs-var">v2</span></a></span></span><span> </span><span id="local-6989586621679121461"><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121461"><span class="hs-identifier hs-var">v3</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-40"></span><span>      </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679121460"><span class="annot"><span class="annottext">v1' :: SCVertex
+</span><a href="#local-6989586621679121460"><span class="hs-identifier hs-var hs-var">v1'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DCVertex -&gt; SCVertex
+</span><a href="#local-6989586621679121467"><span class="hs-identifier hs-var">screenMapping</span></a></span><span> </span><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121463"><span class="hs-identifier hs-var">v1</span></a></span><span>
+</span><span id="line-41"></span><span>          </span><span id="local-6989586621679121459"><span class="annot"><span class="annottext">v2' :: SCVertex
+</span><a href="#local-6989586621679121459"><span class="hs-identifier hs-var hs-var">v2'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DCVertex -&gt; SCVertex
+</span><a href="#local-6989586621679121467"><span class="hs-identifier hs-var">screenMapping</span></a></span><span> </span><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121462"><span class="hs-identifier hs-var">v2</span></a></span><span>
+</span><span id="line-42"></span><span>          </span><span id="local-6989586621679121458"><span class="annot"><span class="annottext">v3' :: SCVertex
+</span><a href="#local-6989586621679121458"><span class="hs-identifier hs-var hs-var">v3'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DCVertex -&gt; SCVertex
+</span><a href="#local-6989586621679121467"><span class="hs-identifier hs-var">screenMapping</span></a></span><span> </span><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121461"><span class="hs-identifier hs-var">v3</span></a></span><span>
+</span><span id="line-43"></span><span>          </span><span id="local-6989586621679121457"><span class="annot"><span class="annottext">wireframeVertices :: Vector SCVertex
+</span><a href="#local-6989586621679121457"><span class="hs-identifier hs-var hs-var">wireframeVertices</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SCVertex -&gt; SCVertex -&gt; Vector SCVertex
+</span><a href="Brick3D.Rasterization.html#rasterizeLine"><span class="hs-identifier hs-var">rasterizeLine</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121460"><span class="hs-identifier hs-var">v1'</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121458"><span class="hs-identifier hs-var">v3'</span></a></span><span> </span><span class="annot"><span class="annottext">Vector SCVertex -&gt; Vector SCVertex -&gt; Vector SCVertex
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SCVertex -&gt; SCVertex -&gt; Vector SCVertex
+</span><a href="Brick3D.Rasterization.html#rasterizeLine"><span class="hs-identifier hs-var">rasterizeLine</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121460"><span class="hs-identifier hs-var">v1'</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121459"><span class="hs-identifier hs-var">v2'</span></a></span><span> </span><span class="annot"><span class="annottext">Vector SCVertex -&gt; Vector SCVertex -&gt; Vector SCVertex
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SCVertex -&gt; SCVertex -&gt; Vector SCVertex
+</span><a href="Brick3D.Rasterization.html#rasterizeLine"><span class="hs-identifier hs-var">rasterizeLine</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121459"><span class="hs-identifier hs-var">v2'</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121458"><span class="hs-identifier hs-var">v3'</span></a></span><span>
+</span><span id="line-44"></span><span>          </span><span id="local-6989586621679121455"><span class="annot"><span class="annottext">fill :: Vector SCVertex
+</span><a href="#local-6989586621679121455"><span class="hs-identifier hs-var hs-var">fill</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SCVertex -&gt; SCVertex -&gt; SCVertex -&gt; Vector SCVertex
+</span><a href="Brick3D.Rasterization.html#fillTriangle"><span class="hs-identifier hs-var">fillTriangle</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121460"><span class="hs-identifier hs-var">v1'</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121459"><span class="hs-identifier hs-var">v2'</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121458"><span class="hs-identifier hs-var">v3'</span></a></span><span>
+</span><span id="line-45"></span><span>          </span><span class="annot"><a href="#local-6989586621679121453"><span class="hs-identifier hs-type">toOutput</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Brick3D.Rasterization.html#PixelAttr"><span class="hs-identifier hs-type">PixelAttr</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span>          </span><span id="local-6989586621679121453"><span class="annot"><span class="annottext">toOutput :: Char -&gt; Vector SCVertex -&gt; Vector ((Int, Int), (Float, PixelAttr))
+</span><a href="#local-6989586621679121453"><span class="hs-identifier hs-var hs-var">toOutput</span></a></span></span><span> </span><span id="local-6989586621679121452"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679121452"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SCVertex -&gt; ((Int, Int), (Float, PixelAttr)))
+-&gt; Vector SCVertex -&gt; Vector ((Int, Int), (Float, PixelAttr))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">((SCVertex -&gt; ((Int, Int), (Float, PixelAttr)))
+ -&gt; Vector SCVertex -&gt; Vector ((Int, Int), (Float, PixelAttr)))
+-&gt; (SCVertex -&gt; ((Int, Int), (Float, PixelAttr)))
+-&gt; Vector SCVertex
+-&gt; Vector ((Int, Int), (Float, PixelAttr))
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679121451"><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121451"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex -&gt; (Int, Int)
+</span><a href="#local-6989586621679121468"><span class="hs-identifier hs-var">toTuple</span></a></span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121451"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121451"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; Getting Float SCVertex Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float SCVertex Float
+Lens' SCVertex Float
+</span><a href="Brick3D.Type.html#depth"><span class="hs-identifier hs-var">depth</span></a></span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679121452"><span class="hs-identifier hs-var">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Attr
+</span><span class="hs-identifier hs-var">defAttr</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>          </span><span id="local-6989586621679121449"><span class="annot"><span class="annottext">fillOutput :: Vector ((Int, Int), (Float, PixelAttr))
+</span><a href="#local-6989586621679121449"><span class="hs-identifier hs-var hs-var">fillOutput</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char -&gt; Vector SCVertex -&gt; Vector ((Int, Int), (Float, PixelAttr))
+</span><a href="#local-6989586621679121453"><span class="hs-identifier hs-var">toOutput</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'B'</span></span><span> </span><span class="annot"><span class="annottext">Vector SCVertex
+</span><a href="#local-6989586621679121455"><span class="hs-identifier hs-var">fill</span></a></span><span>
+</span><span id="line-48"></span><span>          </span><span id="local-6989586621679121448"><span class="annot"><span class="annottext">wireframeOutput :: Vector ((Int, Int), (Float, PixelAttr))
+</span><a href="#local-6989586621679121448"><span class="hs-identifier hs-var hs-var">wireframeOutput</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char -&gt; Vector SCVertex -&gt; Vector ((Int, Int), (Float, PixelAttr))
+</span><a href="#local-6989586621679121453"><span class="hs-identifier hs-var">toOutput</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'*'</span></span><span> </span><span class="annot"><span class="annottext">Vector SCVertex
+</span><a href="#local-6989586621679121457"><span class="hs-identifier hs-var">wireframeVertices</span></a></span><span>
+</span><span id="line-49"></span><span>      </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">[((Int, Int), (Float, PixelAttr))]
+-&gt; Map (Int, Int) (Float, PixelAttr)
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">M.fromList</span></span><span> </span><span class="annot"><span class="annottext">([((Int, Int), (Float, PixelAttr))]
+ -&gt; Map (Int, Int) (Float, PixelAttr))
+-&gt; (Vector ((Int, Int), (Float, PixelAttr))
+    -&gt; [((Int, Int), (Float, PixelAttr))])
+-&gt; Vector ((Int, Int), (Float, PixelAttr))
+-&gt; Map (Int, Int) (Float, PixelAttr)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Vector ((Int, Int), (Float, PixelAttr))
+-&gt; [((Int, Int), (Float, PixelAttr))]
+forall a. Vector a -&gt; [a]
+</span><span class="hs-identifier hs-var">V.toList</span></span><span> </span><span class="annot"><span class="annottext">(Vector ((Int, Int), (Float, PixelAttr))
+ -&gt; Map (Int, Int) (Float, PixelAttr))
+-&gt; Vector ((Int, Int), (Float, PixelAttr))
+-&gt; Map (Int, Int) (Float, PixelAttr)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Vector ((Int, Int), (Float, PixelAttr))
+</span><a href="#local-6989586621679121449"><span class="hs-identifier hs-var">fillOutput</span></a></span><span> </span><span class="annot"><span class="annottext">Vector ((Int, Int), (Float, PixelAttr))
+-&gt; Vector ((Int, Int), (Float, PixelAttr))
+-&gt; Vector ((Int, Int), (Float, PixelAttr))
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Vector ((Int, Int), (Float, PixelAttr))
+</span><a href="#local-6989586621679121448"><span class="hs-identifier hs-var">wireframeOutput</span></a></span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-51"></span><span>    </span><span id="local-6989586621679121445"><span class="annot"><span class="annottext">halfX :: Int
+</span><a href="#local-6989586621679121445"><span class="hs-identifier hs-var hs-var">halfX</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Int
+forall a. Num a =&gt; Integer -&gt; a
+</span><span class="hs-identifier hs-var">fromInteger</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Int) -&gt; (Int -&gt; Integer) -&gt; Int -&gt; Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Int) -&gt; Int -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121476"><span class="hs-identifier hs-var">sx</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-52"></span><span>    </span><span id="local-6989586621679121443"><span class="annot"><span class="annottext">halfY :: Int
+</span><a href="#local-6989586621679121443"><span class="hs-identifier hs-var hs-var">halfY</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Int
+forall a. Num a =&gt; Integer -&gt; a
+</span><span class="hs-identifier hs-var">fromInteger</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Int) -&gt; (Int -&gt; Integer) -&gt; Int -&gt; Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Int) -&gt; Int -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121475"><span class="hs-identifier hs-var">sy</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span>    </span><span class="annot"><a href="#local-6989586621679121468"><span class="hs-identifier hs-type">toTuple</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span>    </span><span id="local-6989586621679121468"><span class="annot"><span class="annottext">toTuple :: SCVertex -&gt; (Int, Int)
+</span><a href="#local-6989586621679121468"><span class="hs-identifier hs-var hs-var">toTuple</span></a></span></span><span> </span><span id="local-6989586621679121442"><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121442"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121442"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; Getting Int SCVertex Int -&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(SCPosition -&gt; Const Int SCPosition)
+-&gt; SCVertex -&gt; Const Int SCVertex
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="annot"><span class="annottext">((SCPosition -&gt; Const Int SCPosition)
+ -&gt; SCVertex -&gt; Const Int SCVertex)
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Getting Int SCVertex Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121442"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; Getting Int SCVertex Int -&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(SCPosition -&gt; Const Int SCPosition)
+-&gt; SCVertex -&gt; Const Int SCVertex
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="annot"><span class="annottext">((SCPosition -&gt; Const Int SCPosition)
+ -&gt; SCVertex -&gt; Const Int SCVertex)
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Getting Int SCVertex Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R2 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_y</span></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-comment">-- Be careful: This is __Not `DCPosition -&gt; SCPosition'__</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-comment">--   Because 'halfX' and 'halfY' are both 'SCPosition' value.</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><a href="#local-6989586621679121440"><span class="hs-identifier hs-type">moveOriginToCenter</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCPosition"><span class="hs-identifier hs-type">SCPosition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCPosition"><span class="hs-identifier hs-type">SCPosition</span></a></span><span>
+</span><span id="line-60"></span><span>    </span><span id="local-6989586621679121440"><span class="annot"><span class="annottext">moveOriginToCenter :: SCPosition -&gt; SCPosition
+</span><a href="#local-6989586621679121440"><span class="hs-identifier hs-var hs-var">moveOriginToCenter</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">V2</span></span><span> </span><span id="local-6989586621679121438"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121438"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621679121437"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121437"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>  </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; SCPosition
+forall a. a -&gt; a -&gt; V2 a
+</span><span class="hs-identifier hs-var">V2</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121438"><span class="hs-identifier hs-var">x</span></a></span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121445"><span class="hs-identifier hs-var">halfX</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121437"><span class="hs-identifier hs-var">y</span></a></span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121443"><span class="hs-identifier hs-var">halfY</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><a href="#local-6989586621679121467"><span class="hs-identifier hs-type">screenMapping</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#DCVertex"><span class="hs-identifier hs-type">DCVertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span>
+</span><span id="line-63"></span><span>    </span><span id="local-6989586621679121467"><span class="annot"><span class="annottext">screenMapping :: DCVertex -&gt; SCVertex
+</span><a href="#local-6989586621679121467"><span class="hs-identifier hs-var hs-var">screenMapping</span></a></span></span><span> </span><span id="local-6989586621679121435"><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121435"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679121434"><span class="annot"><span class="annottext">mappedPos :: SCPosition
+</span><a href="#local-6989586621679121434"><span class="hs-identifier hs-var hs-var">mappedPos</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DCPosition -&gt; SCPosition
+</span><a href="#local-6989586621679121433"><span class="hs-identifier hs-var">screenMapping'</span></a></span><span> </span><span class="annot"><span class="annottext">(DCPosition -&gt; SCPosition) -&gt; DCPosition -&gt; SCPosition
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121435"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">DCVertex -&gt; Getting DCPosition DCVertex DCPosition -&gt; DCPosition
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting DCPosition DCVertex DCPosition
+Lens' DCVertex DCPosition
+</span><a href="Brick3D.Type.html#dcv_position"><span class="hs-identifier hs-var">dcv_position</span></a></span><span>
+</span><span id="line-64"></span><span>                      </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">SCPosition -&gt; Float -&gt; SCVertex
+</span><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-var">SCVertex</span></a></span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121434"><span class="hs-identifier hs-var">mappedPos</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DCVertex
+</span><a href="#local-6989586621679121435"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">DCVertex -&gt; Getting Float DCVertex Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float DCVertex Float
+Lens' DCVertex Float
+</span><a href="Brick3D.Type.html#zBuffer"><span class="hs-identifier hs-var">zBuffer</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><a href="#local-6989586621679121433"><span class="hs-identifier hs-type">screenMapping'</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#DCPosition"><span class="hs-identifier hs-type">DCPosition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCPosition"><span class="hs-identifier hs-type">SCPosition</span></a></span><span>
+</span><span id="line-67"></span><span>    </span><span id="local-6989586621679121433"><span class="annot"><span class="annottext">screenMapping' :: DCPosition -&gt; SCPosition
+</span><a href="#local-6989586621679121433"><span class="hs-identifier hs-var hs-var">screenMapping'</span></a></span></span><span> </span><span id="local-6989586621679121430"><span class="annot"><span class="annottext">DCPosition
+</span><a href="#local-6989586621679121430"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SCPosition -&gt; SCPosition
+</span><a href="#local-6989586621679121440"><span class="hs-identifier hs-var">moveOriginToCenter</span></a></span><span>
+</span><span id="line-68"></span><span>                         </span><span class="annot"><span class="annottext">(SCPosition -&gt; SCPosition) -&gt; SCPosition -&gt; SCPosition
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; SCPosition
+forall a. a -&gt; a -&gt; V2 a
+</span><span class="hs-identifier hs-var">V2</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Int
+forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Int) -&gt; Float -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Float
+forall a. Num a =&gt; Integer -&gt; a
+</span><span class="hs-identifier hs-var">fromInteger</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Float) -&gt; (Int -&gt; Integer) -&gt; Int -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Float) -&gt; Int -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121476"><span class="hs-identifier hs-var">sx</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">DCPosition
+</span><a href="#local-6989586621679121430"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">DCPosition -&gt; Getting Float DCPosition Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float DCPosition Float
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>                         </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Float -&gt; Int
+forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Int) -&gt; Float -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">-</span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Float
+forall a. Num a =&gt; Integer -&gt; a
+</span><span class="hs-identifier hs-var">fromInteger</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Float) -&gt; (Int -&gt; Integer) -&gt; Int -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Float) -&gt; Int -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121475"><span class="hs-identifier hs-var">sy</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">DCPosition
+</span><a href="#local-6989586621679121430"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">DCPosition -&gt; Getting Float DCPosition Float -&gt; Float
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting Float DCPosition Float
+forall (t :: * -&gt; *) a. R2 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_y</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="hs-comment">-- | 'DCVertex's which constructs line begin at 'begin' and end at 'end'</span><span>
+</span><span id="line-72"></span><span class="hs-comment">--</span><span>
+</span><span id="line-73"></span><span class="hs-comment">-- JP: &#19982;&#12360;&#12425;&#12428;&#12383; 'begin' &#12392; 'end' &#12434;&#20001;&#31471;&#12395;&#25345;&#12388;&#32218;&#20998;&#12434;&#27083;&#25104;&#12377;&#12427; 'DCVertex' &#12434;&#36820;&#12375;&#12414;&#12377;</span><span>
+</span><span id="line-74"></span><span class="annot"><a href="Brick3D.Rasterization.html#rasterizeLine"><span class="hs-identifier hs-type">rasterizeLine</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span>
+</span><span id="line-75"></span><span id="rasterizeLine"><span class="annot"><span class="annottext">rasterizeLine :: SCVertex -&gt; SCVertex -&gt; Vector SCVertex
+</span><a href="Brick3D.Rasterization.html#rasterizeLine"><span class="hs-identifier hs-var hs-var">rasterizeLine</span></a></span></span><span> </span><span id="local-6989586621679121427"><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121427"><span class="hs-identifier hs-var">begin</span></a></span></span><span> </span><span id="local-6989586621679121426"><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121426"><span class="hs-identifier hs-var">end</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679121425"><span class="annot"><span class="annottext">begin' :: SCPosition
+</span><a href="#local-6989586621679121425"><span class="hs-identifier hs-var hs-var">begin'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121427"><span class="hs-identifier hs-var">begin</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; Getting SCPosition SCVertex SCPosition -&gt; SCPosition
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting SCPosition SCVertex SCPosition
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span>
+</span><span id="line-76"></span><span>                              </span><span id="local-6989586621679121424"><span class="annot"><span class="annottext">end' :: SCPosition
+</span><a href="#local-6989586621679121424"><span class="hs-identifier hs-var hs-var">end'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121426"><span class="hs-identifier hs-var">end</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; Getting SCPosition SCVertex SCPosition -&gt; SCPosition
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting SCPosition SCVertex SCPosition
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span>
+</span><span id="line-77"></span><span>                              </span><span id="local-6989586621679121423"><span class="annot"><span class="annottext">v :: SCPosition
+</span><a href="#local-6989586621679121423"><span class="hs-identifier hs-var hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121424"><span class="hs-identifier hs-var">end'</span></a></span><span class="annot"><span class="annottext">SCPosition -&gt; SCPosition -&gt; SCPosition
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121425"><span class="hs-identifier hs-var">begin'</span></a></span><span>
+</span><span id="line-78"></span><span>                              </span><span class="annot"><a href="#local-6989586621679121422"><span class="hs-identifier hs-type">y</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-79"></span><span>                              </span><span id="local-6989586621679121422"><span class="annot"><span class="annottext">y :: Int -&gt; Int
+</span><a href="#local-6989586621679121422"><span class="hs-identifier hs-var hs-var">y</span></a></span></span><span> </span><span id="local-6989586621679121421"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121421"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Float -&gt; Int
+forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="annot"><span class="annottext">(Float -&gt; Int) -&gt; Float -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Rational -&gt; Float
+forall a. Fractional a =&gt; Rational -&gt; a
+</span><span class="hs-identifier hs-var">fromRational</span></span><span> </span><span class="annot"><span class="annottext">(Rational -&gt; Float) -&gt; (Int -&gt; Rational) -&gt; Int -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Float) -&gt; Int -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121423"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">SCPosition
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R2 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_y</span></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>                                             </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Fractional a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">/</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">Rational -&gt; Float
+forall a. Fractional a =&gt; Rational -&gt; a
+</span><span class="hs-identifier hs-var">fromRational</span></span><span> </span><span class="annot"><span class="annottext">(Rational -&gt; Float) -&gt; (Int -&gt; Rational) -&gt; Int -&gt; Float
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Rational
+forall a. Real a =&gt; a -&gt; Rational
+</span><span class="hs-identifier hs-var">toRational</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Float) -&gt; Int -&gt; Float
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121423"><span class="hs-identifier hs-var">v</span></a></span><span class="annot"><span class="annottext">SCPosition
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Float</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>                                    </span><span class="annot"><span class="annottext">Float -&gt; Float -&gt; Float
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span class="annot"><span class="annottext">Int -&gt; Float
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121421"><span class="hs-identifier hs-var">x</span></a></span><span>
+</span><span id="line-82"></span><span>                          </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679121419"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121419"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121427"><span class="hs-identifier hs-var">begin</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; (SCVertex -&gt; SCVertex) -&gt; SCVertex
+forall a b. a -&gt; (a -&gt; b) -&gt; b
+</span><span class="hs-operator hs-var">&amp;</span></span><span class="annot"><span class="annottext">(SCPosition -&gt; Identity SCPosition)
+-&gt; SCVertex -&gt; Identity SCVertex
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="annot"><span class="annottext">((SCPosition -&gt; Identity SCPosition)
+ -&gt; SCVertex -&gt; Identity SCVertex)
+-&gt; (SCPosition -&gt; SCPosition) -&gt; SCVertex -&gt; SCVertex
+forall s t a b. ASetter s t a b -&gt; (a -&gt; b) -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">%~</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition -&gt; SCPosition -&gt; SCPosition
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; SCPosition
+forall a. a -&gt; a -&gt; V2 a
+</span><span class="hs-identifier hs-var">V2</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121419"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Int
+</span><a href="#local-6989586621679121422"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121419"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; SCVertex) -&gt; Vector Int -&gt; Vector SCVertex
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; (Int -&gt; Int) -&gt; Vector Int
+forall a. Int -&gt; (Int -&gt; a) -&gt; Vector a
+</span><span class="hs-identifier hs-var">V.generate</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121424"><span class="hs-identifier hs-var">end'</span></a></span><span class="annot"><span class="annottext">SCPosition
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121425"><span class="hs-identifier hs-var">begin'</span></a></span><span class="annot"><span class="annottext">SCPosition
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer -&gt; Int
+forall a. Num a =&gt; Integer -&gt; a
+</span><span class="hs-identifier hs-var">fromInteger</span></span><span class="annot"><span class="annottext">(Integer -&gt; Int) -&gt; (Int -&gt; Integer) -&gt; Int -&gt; Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">Int -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span class="hs-special">)</span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- | Returns 'DCVertex's that constructs one filled-triangle</span><span>
+</span><span id="line-85"></span><span class="hs-comment">--</span><span>
+</span><span id="line-86"></span><span class="hs-comment">-- Note that depth of those 'DCVertex's are not calculated properly.</span><span>
+</span><span id="line-87"></span><span class="hs-comment">-- Currently it inherits depth of 'v1'</span><span>
+</span><span id="line-88"></span><span class="hs-comment">-- I want to fix this later.</span><span>
+</span><span id="line-89"></span><span class="annot"><a href="Brick3D.Rasterization.html#fillTriangle"><span class="hs-identifier hs-type">fillTriangle</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Vector</span></span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCVertex"><span class="hs-identifier hs-type">SCVertex</span></a></span><span>
+</span><span id="line-90"></span><span id="fillTriangle"><span class="annot"><span class="annottext">fillTriangle :: SCVertex -&gt; SCVertex -&gt; SCVertex -&gt; Vector SCVertex
+</span><a href="Brick3D.Rasterization.html#fillTriangle"><span class="hs-identifier hs-var hs-var">fillTriangle</span></a></span></span><span> </span><span id="local-6989586621679121414"><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121414"><span class="hs-identifier hs-var">v1</span></a></span></span><span> </span><span id="local-6989586621679121413"><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121413"><span class="hs-identifier hs-var">v2</span></a></span></span><span> </span><span id="local-6989586621679121412"><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121412"><span class="hs-identifier hs-var">v3</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SCPosition -&gt; SCVertex -&gt; SCVertex)
+-&gt; SCVertex -&gt; SCPosition -&gt; SCVertex
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(SCPosition -&gt; Identity SCPosition)
+-&gt; SCVertex -&gt; Identity SCVertex
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="annot"><span class="annottext">((SCPosition -&gt; Identity SCPosition)
+ -&gt; SCVertex -&gt; Identity SCVertex)
+-&gt; SCPosition -&gt; SCVertex -&gt; SCVertex
+forall s t a b. ASetter s t a b -&gt; b -&gt; s -&gt; t
+</span><span class="hs-operator hs-var">.~</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121414"><span class="hs-identifier hs-var">v1</span></a></span><span>
+</span><span id="line-91"></span><span>                        </span><span class="annot"><span class="annottext">(SCPosition -&gt; SCVertex) -&gt; Vector SCPosition -&gt; Vector SCVertex
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(SCPosition -&gt; Bool) -&gt; Vector SCPosition -&gt; Vector SCPosition
+forall a. (a -&gt; Bool) -&gt; Vector a -&gt; Vector a
+</span><span class="hs-identifier hs-var">V.filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition -&gt; (SCPosition, SCPosition, SCPosition) -&gt; Bool
+</span><a href="Brick3D.Rasterization.html#isInsideOfTri"><span class="hs-operator hs-var">`isInsideOfTri`</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121414"><span class="hs-identifier hs-var">v1</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; Getting SCPosition SCVertex SCPosition -&gt; SCPosition
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting SCPosition SCVertex SCPosition
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121413"><span class="hs-identifier hs-var">v2</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; Getting SCPosition SCVertex SCPosition -&gt; SCPosition
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting SCPosition SCVertex SCPosition
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121412"><span class="hs-identifier hs-var">v3</span></a></span><span class="annot"><span class="annottext">SCVertex -&gt; Getting SCPosition SCVertex SCPosition -&gt; SCPosition
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">Getting SCPosition SCVertex SCPosition
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-92"></span><span>                        </span><span class="annot"><span class="annottext">Vector SCPosition
+</span><a href="#local-6989586621679121407"><span class="hs-identifier hs-var">boundaryRectVertices</span></a></span><span>
+</span><span id="line-93"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-94"></span><span>    </span><span id="local-6989586621679121406"><span class="annot"><span class="annottext">maxX :: Int
+</span><a href="#local-6989586621679121406"><span class="hs-identifier hs-var hs-var">maxX</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
+forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">maximum</span></span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; Int) -&gt; [Int] -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex -&gt; Getting Int SCVertex Int -&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(SCPosition -&gt; Const Int SCPosition)
+-&gt; SCVertex -&gt; Const Int SCVertex
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="annot"><span class="annottext">((SCPosition -&gt; Const Int SCPosition)
+ -&gt; SCVertex -&gt; Const Int SCVertex)
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Getting Int SCVertex Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SCVertex -&gt; Int) -&gt; [SCVertex] -&gt; [Int]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121414"><span class="hs-identifier hs-var">v1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121413"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121412"><span class="hs-identifier hs-var">v3</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-95"></span><span>    </span><span id="local-6989586621679121404"><span class="annot"><span class="annottext">minX :: Int
+</span><a href="#local-6989586621679121404"><span class="hs-identifier hs-var hs-var">minX</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
+forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">minimum</span></span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; Int) -&gt; [Int] -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex -&gt; Getting Int SCVertex Int -&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(SCPosition -&gt; Const Int SCPosition)
+-&gt; SCVertex -&gt; Const Int SCVertex
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="annot"><span class="annottext">((SCPosition -&gt; Const Int SCPosition)
+ -&gt; SCVertex -&gt; Const Int SCVertex)
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Getting Int SCVertex Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SCVertex -&gt; Int) -&gt; [SCVertex] -&gt; [Int]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121414"><span class="hs-identifier hs-var">v1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121413"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121412"><span class="hs-identifier hs-var">v3</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-96"></span><span>    </span><span id="local-6989586621679121402"><span class="annot"><span class="annottext">maxY :: Int
+</span><a href="#local-6989586621679121402"><span class="hs-identifier hs-var hs-var">maxY</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
+forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">maximum</span></span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; Int) -&gt; [Int] -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex -&gt; Getting Int SCVertex Int -&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(SCPosition -&gt; Const Int SCPosition)
+-&gt; SCVertex -&gt; Const Int SCVertex
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="annot"><span class="annottext">((SCPosition -&gt; Const Int SCPosition)
+ -&gt; SCVertex -&gt; Const Int SCVertex)
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Getting Int SCVertex Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R2 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_y</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SCVertex -&gt; Int) -&gt; [SCVertex] -&gt; [Int]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121414"><span class="hs-identifier hs-var">v1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121413"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121412"><span class="hs-identifier hs-var">v3</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-97"></span><span>    </span><span id="local-6989586621679121401"><span class="annot"><span class="annottext">minY :: Int
+</span><a href="#local-6989586621679121401"><span class="hs-identifier hs-var hs-var">minY</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Int] -&gt; Int
+forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">minimum</span></span><span> </span><span class="annot"><span class="annottext">([Int] -&gt; Int) -&gt; [Int] -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCVertex -&gt; Getting Int SCVertex Int -&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(SCPosition -&gt; Const Int SCPosition)
+-&gt; SCVertex -&gt; Const Int SCVertex
+Lens' SCVertex SCPosition
+</span><a href="Brick3D.Type.html#scv_position"><span class="hs-identifier hs-var">scv_position</span></a></span><span class="annot"><span class="annottext">((SCPosition -&gt; Const Int SCPosition)
+ -&gt; SCVertex -&gt; Const Int SCVertex)
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Getting Int SCVertex Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R2 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_y</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(SCVertex -&gt; Int) -&gt; [SCVertex] -&gt; [Int]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121414"><span class="hs-identifier hs-var">v1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121413"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCVertex
+</span><a href="#local-6989586621679121412"><span class="hs-identifier hs-var">v3</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-98"></span><span>    </span><span id="local-6989586621679121407"><span class="annot"><span class="annottext">boundaryRectVertices :: Vector SCPosition
+</span><a href="#local-6989586621679121407"><span class="hs-identifier hs-var hs-var">boundaryRectVertices</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[SCPosition] -&gt; Vector SCPosition
+forall a. [a] -&gt; Vector a
+</span><span class="hs-identifier hs-var">V.fromList</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; SCPosition
+forall a. a -&gt; a -&gt; V2 a
+</span><span class="hs-identifier hs-var">V2</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121399"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121398"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679121399"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121399"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121404"><span class="hs-identifier hs-var">minX</span></a></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121406"><span class="hs-identifier hs-var">maxX</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-99"></span><span>                                              </span><span class="hs-special">,</span><span> </span><span id="local-6989586621679121398"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121398"><span class="hs-identifier hs-var">y</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121401"><span class="hs-identifier hs-var">minY</span></a></span><span class="hs-glyph">..</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679121402"><span class="hs-identifier hs-var">maxY</span></a></span><span class="hs-special">]</span><span class="hs-special">]</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="hs-comment">-- | 'True' if given coordinate is within given Triangle</span><span>
+</span><span id="line-102"></span><span class="hs-comment">--</span><span>
+</span><span id="line-103"></span><span class="hs-comment">-- It doesn't care if the triangle is formed well.</span><span>
+</span><span id="line-104"></span><span class="hs-comment">-- (e.g. one vertex is on the line made of other two vertex, two of them are the same.)</span><span>
+</span><span id="line-105"></span><span class="hs-comment">-- This is because projection could</span><span>
+</span><span id="line-106"></span><span class="hs-comment">--</span><span>
+</span><span id="line-107"></span><span class="hs-comment">-- JP: &#12371;&#12398;&#38306;&#25968;&#12399;&#12300;&#19977;&#35282;&#24418;&#12364;&#12365;&#12385;&#12435;&#12392;&#19977;&#35282;&#24418;&#12391;&#12354;&#12427;&#12363;&#12301;&#12434;&#32771;&#24942;&#12375;&#12414;&#12379;&#12435;&#12290;</span><span>
+</span><span id="line-108"></span><span class="hs-comment">-- (&#20363;&#12360;&#12400;: &#38914;&#28857;&#12364;&#19968;&#30452;&#32218;&#19978;&#12395;&#20006;&#12435;&#12391;&#12375;&#12414;&#12387;&#12390;&#12356;&#12427;, &#35079;&#25968;&#12398;&#38914;&#28857;&#12364;&#21516;&#12376;&#20301;&#32622;&#12395;&#12354;&#12427;&#12394;&#12393;)</span><span>
+</span><span id="line-109"></span><span class="annot"><a href="Brick3D.Rasterization.html#isInsideOfTri"><span class="hs-identifier hs-type">isInsideOfTri</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCPosition"><span class="hs-identifier hs-type">SCPosition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Brick3D.Type.html#SCPosition"><span class="hs-identifier hs-type">SCPosition</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCPosition"><span class="hs-identifier hs-type">SCPosition</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Brick3D.Type.html#SCPosition"><span class="hs-identifier hs-type">SCPosition</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-110"></span><span id="isInsideOfTri"><span class="annot"><span class="annottext">isInsideOfTri :: SCPosition -&gt; (SCPosition, SCPosition, SCPosition) -&gt; Bool
+</span><a href="Brick3D.Rasterization.html#isInsideOfTri"><span class="hs-identifier hs-var hs-var">isInsideOfTri</span></a></span></span><span> </span><span id="local-6989586621679121397"><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121397"><span class="hs-identifier hs-var">candidate</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679121396"><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121396"><span class="hs-identifier hs-var">v1</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679121395"><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121395"><span class="hs-identifier hs-var">v2</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679121394"><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121394"><span class="hs-identifier hs-var">v3</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((SCPosition, SCPosition, SCPosition) -&gt; Bool)
+-&gt; [(SCPosition, SCPosition, SCPosition)] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">all</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition -&gt; (SCPosition, SCPosition, SCPosition) -&gt; Bool
+</span><a href="#local-6989586621679121392"><span class="hs-identifier hs-var">oneLineTest</span></a></span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121397"><span class="hs-identifier hs-var">candidate</span></a></span><span class="hs-special">)</span><span>  </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121396"><span class="hs-identifier hs-var">v1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121395"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121394"><span class="hs-identifier hs-var">v3</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121395"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121394"><span class="hs-identifier hs-var">v3</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121396"><span class="hs-identifier hs-var">v1</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121394"><span class="hs-identifier hs-var">v3</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121396"><span class="hs-identifier hs-var">v1</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121395"><span class="hs-identifier hs-var">v2</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-112"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-comment">-- | Test wether 'cand' and 'a' is at the same side of line made of vs and ve</span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-115"></span><span>    </span><span class="hs-comment">-- JP: 'cand' &#12392; 'a' &#12364;, vs,ve &#12434;&#20001;&#31471;&#12395;&#25345;&#12388;&#30452;&#32218;&#12398;&#21516;&#12376;&#20596;&#12395;&#12354;&#12427;&#12363;&#12434;&#21028;&#23450;&#12377;&#12427;&#12290;</span><span>
+</span><span id="line-116"></span><span>    </span><span class="hs-comment">-- &#21516;&#12376;&#20596;&#12395;&#12354;&#12428;&#12400;, &#12381;&#12398;&#30452;&#32218;&#12392; 'cand' &#21450;&#12403; 'a' &#12398;&#20869;&#31309;&#12398;&#31526;&#21495;&#12364;&#31561;&#12375;&#12367;&#12394;&#12427;=0&#20197;&#19978;&#12395;&#12394;&#12427;</span><span>
+</span><span id="line-117"></span><span>    </span><span class="hs-comment">-- &#12399;&#12378;&#12394;&#12398;&#12391;&#21028;&#23450;&#12364;&#12391;&#12365;&#12427;&#12290;</span><span>
+</span><span id="line-118"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-119"></span><span>    </span><span class="hs-comment">-- TODO: Float&#21028;&#23450;&#12434;&#12375;&#12383;&#26041;&#12364;&#31934;&#24230;&#12364;&#33391;&#12356;&#65311;</span><span>
+</span><span id="line-120"></span><span>    </span><span class="annot"><a href="#local-6989586621679121392"><span class="hs-identifier hs-type">oneLineTest</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V2</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">V2</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V2</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">V2</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-121"></span><span>    </span><span id="local-6989586621679121392"><span class="annot"><span class="annottext">oneLineTest :: SCPosition -&gt; (SCPosition, SCPosition, SCPosition) -&gt; Bool
+</span><a href="#local-6989586621679121392"><span class="hs-identifier hs-var hs-var">oneLineTest</span></a></span></span><span> </span><span id="local-6989586621679121391"><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121391"><span class="hs-identifier hs-var">cand</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679121390"><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121390"><span class="hs-identifier hs-var">vs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679121389"><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121389"><span class="hs-identifier hs-var">ve</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679121388"><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121388"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121387"><span class="hs-identifier hs-var">vl</span></a></span><span> </span><span class="annot"><span class="annottext">SCPosition -&gt; SCPosition -&gt; Int
+forall (f :: * -&gt; *) a. (Metric f, Num a) =&gt; f a -&gt; f a -&gt; a
+</span><span class="hs-operator hs-var">`dot`</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121391"><span class="hs-identifier hs-var">cand</span></a></span><span> </span><span class="annot"><span class="annottext">SCPosition -&gt; SCPosition -&gt; SCPosition
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121390"><span class="hs-identifier hs-var">vs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121387"><span class="hs-identifier hs-var">vl</span></a></span><span> </span><span class="annot"><span class="annottext">SCPosition -&gt; SCPosition -&gt; Int
+forall (f :: * -&gt; *) a. (Metric f, Num a) =&gt; f a -&gt; f a -&gt; a
+</span><span class="hs-operator hs-var">`dot`</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121388"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">SCPosition -&gt; SCPosition -&gt; SCPosition
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121390"><span class="hs-identifier hs-var">vs</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-comment">-- &#32218;&#19978;&#12395;&#12354;&#12427;&#22580;&#21512;&#12418;&#21547;&#12417;&#12390;&#12356;&#12427;</span><span>
+</span><span id="line-122"></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-123"></span><span>        </span><span class="hs-comment">-- | JP: &#30906;&#12363;&#12417;&#12383;&#12356;&#23550;&#35937;&#12398;&#30452;&#32218;&#12505;&#12463;&#12488;&#12523;</span><span>
+</span><span id="line-124"></span><span>        </span><span id="local-6989586621679121386"><span class="annot"><span class="annottext">line :: SCPosition
+</span><a href="#local-6989586621679121386"><span class="hs-identifier hs-var hs-var">line</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121389"><span class="hs-identifier hs-var">ve</span></a></span><span> </span><span class="annot"><span class="annottext">SCPosition -&gt; SCPosition -&gt; SCPosition
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121390"><span class="hs-identifier hs-var">vs</span></a></span><span>
+</span><span id="line-125"></span><span>        </span><span class="hs-comment">-- | JP: &#23550;&#35937;&#12398;&#32218;&#20998;&#12395;&#30452;&#20132;&#12377;&#12427;&#30452;&#32218;&#12505;&#12463;&#12488;&#12523;</span><span>
+</span><span id="line-126"></span><span>        </span><span class="hs-comment">-- &#30452;&#20132;&#12377;&#12427;&#22580;&#21512;&#20869;&#31309;&#12364;0&#12395;&#12394;&#12427;&#24615;&#36074;&#12434;&#21033;&#29992;&#12375;&#12390;&#23450;&#32681;&#12377;&#12427;</span><span>
+</span><span id="line-127"></span><span>        </span><span id="local-6989586621679121387"><span class="annot"><span class="annottext">vl :: SCPosition
+</span><a href="#local-6989586621679121387"><span class="hs-identifier hs-var hs-var">vl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; SCPosition
+forall a. a -&gt; a -&gt; V2 a
+</span><span class="hs-identifier hs-var">V2</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121386"><span class="hs-identifier hs-var">line</span></a></span><span class="annot"><span class="annottext">SCPosition
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R2 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_y</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">SCPosition
+</span><a href="#local-6989586621679121386"><span class="hs-identifier hs-var">line</span></a></span><span class="annot"><span class="annottext">SCPosition
+-&gt; ((Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition)
+-&gt; Int
+forall s a. s -&gt; Getting a s a -&gt; a
+</span><span class="hs-operator hs-var">^.</span></span><span class="annot"><span class="annottext">(Int -&gt; Const Int Int) -&gt; SCPosition -&gt; Const Int SCPosition
+forall (t :: * -&gt; *) a. R1 t =&gt; Lens' (t a) a
+</span><span class="hs-identifier hs-var">_x</span></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span></pre></body></html>

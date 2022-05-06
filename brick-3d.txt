@@ -16,12 +16,24 @@ type Position = V3 Float
 type Rotation = M33 Float
 
 -- | Position in Device Coordinate
+--   
+--   Device coordnate is a Coordinate that put (0,0) on the center, and Y
+--   axis is positive above the center. X axis is positive on the right.
+--   The value have range of -1~1 and floating number(As shown in the Type
+--   definition)
 type DCPosition = V2 Float
+
+-- | Position in Screen Coordinate
+--   
+--   Screen Coordinate is a Coordinate that is associated with actuall
+--   "pixel" of the screen. In this case, as we use <a>Canvas</a> for
+--   screen, (0, 0) is set at the Top-Left corner.
+type SCPosition = V2 Int
 
 -- | Normal of some 3-Dimensional object
 type Normal = V3 Float
 
--- | One <a>Vertex</a>
+-- | One <a>Vertex</a> in 3D coordinate
 data Vertex
 Vertex :: Position -> Vertex
 v_position :: Lens' Vertex Position
@@ -34,6 +46,12 @@ zBuffer :: Lens' DCVertex Float
 
 -- | Convert <a>Vertex</a> to <a>DCVertex</a>
 fromVertex :: Vertex -> DCVertex
+
+-- | A vertex on Screen Coordinate.
+data SCVertex
+SCVertex :: SCPosition -> Float -> SCVertex
+scv_position :: Lens' SCVertex SCPosition
+depth :: Lens' SCVertex Float
 
 -- | Define Primitive shapes. This would
 data PrimitiveBase vtype
@@ -60,16 +78,59 @@ vertices :: Traversal' Primitive Vertex
 -- | <b>THIS ISN'T <a>Traversal</a></b>
 --   
 --   Convert <a>Primitive</a> to <a>DCPrimitive</a>
-toDCPrimitive :: (Vertex -> DCVertex) -> Primitive -> DCPrimitive
+toDCPrimitive :: Applicative f => (Vertex -> f DCVertex) -> Primitive -> f DCPrimitive
 instance GHC.Classes.Ord vtype => GHC.Classes.Ord (Brick3D.Type.PrimitiveBase vtype)
 instance GHC.Classes.Eq vtype => GHC.Classes.Eq (Brick3D.Type.PrimitiveBase vtype)
 instance GHC.Show.Show vtype => GHC.Show.Show (Brick3D.Type.PrimitiveBase vtype)
+instance GHC.Classes.Ord Brick3D.Type.SCVertex
+instance GHC.Classes.Eq Brick3D.Type.SCVertex
+instance GHC.Show.Show Brick3D.Type.SCVertex
 instance GHC.Classes.Ord Brick3D.Type.DCVertex
 instance GHC.Classes.Eq Brick3D.Type.DCVertex
 instance GHC.Show.Show Brick3D.Type.DCVertex
 instance GHC.Classes.Ord Brick3D.Type.Vertex
 instance GHC.Classes.Eq Brick3D.Type.Vertex
 instance GHC.Show.Show Brick3D.Type.Vertex
+
+module Brick3D.Rasterization
+
+-- | Represents one Pixel
+type PixelAttr = (Char, Attr)
+
+-- | Merge two <a>Map</a> of Pixels into one by comparing zBuffer
+mergeAttr :: Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr)
+
+-- | Convert <a>Map</a> to list so that <tt>canvasSetMany</tt> can treat
+toCanvasPixels :: Map (Int, Int) (Char, Attr) -> [((Int, Int), Char, Attr)]
+
+-- | Rasterize many of <a>DCPrimitive</a>s
+rasterizeMany :: (Foldable t, Functor t) => (Int, Int) -> t DCPrimitive -> [((Int, Int), Char, Attr)]
+
+-- | Rasterize one <a>DCPrimitive</a>
+rasterize :: (Int, Int) -> DCPrimitive -> Map (Int, Int) (Float, PixelAttr)
+
+-- | <a>DCVertex</a>s which constructs line begin at <tt>begin</tt> and end
+--   at <tt>end</tt>
+--   
+--   JP: 与えられた <tt>begin</tt> と <tt>end</tt> を両端に持つ線分を構成する <a>DCVertex</a>
+--   を返します
+rasterizeLine :: SCVertex -> SCVertex -> Vector SCVertex
+
+-- | Returns <a>DCVertex</a>s that constructs one filled-triangle
+--   
+--   Note that depth of those <a>DCVertex</a>s are not calculated properly.
+--   Currently it inherits depth of <tt>v1</tt> I want to fix this later.
+fillTriangle :: SCVertex -> SCVertex -> SCVertex -> Vector SCVertex
+
+-- | <a>True</a> if given coordinate is within given Triangle
+--   
+--   It doesn't care if the triangle is formed well. (e.g. one vertex is on
+--   the line made of other two vertex, two of them are the same.) This is
+--   because projection could
+--   
+--   JP: この関数は「三角形がきちんと三角形であるか」を考慮しません。 (例えば: 頂点が一直線上に並んでしまっている,
+--   複数の頂点が同じ位置にあるなど)
+isInsideOfTri :: SCPosition -> (SCPosition, SCPosition, SCPosition) -> Bool
 
 module Brick3D.Camera
 
@@ -129,21 +190,11 @@ render' :: ThreeDState -> [((Int, Int), Char, Attr)]
 farNearClip :: Camera -> Primitive -> Bool
 
 -- | Project one <a>Primitive</a> to device coordinate
-projectPrimitive :: Float -> Primitive -> DCPrimitive
+projectPrimitive :: Float -> Primitive -> Maybe DCPrimitive
 
 -- | Project one vertex to device coordinate
-projectVertex :: Float -> Vertex -> DCVertex
+projectVertex :: Float -> Vertex -> Maybe DCVertex
 applyCameraTransform :: Camera -> Primitive -> Primitive
-
--- | Rasterize one <a>DCPrimitive</a>
-rasterize :: (Int, Int) -> DCPrimitive -> [((Int, Int), Char, Attr)]
-
--- | <a>Vertex</a>s which constructs line begin at <tt>begin</tt> and end
---   at <tt>end</tt>
---   
---   JP: 与えられた <tt>begin</tt> と <tt>end</tt> を両端に持つ線分を構成する <a>Vertex</a>
---   を返します
-rasterizeLine :: DCVertex -> DCVertex -> [DCVertex]
 
 module Brick.Extensions.ThreeD.Widgets
 
