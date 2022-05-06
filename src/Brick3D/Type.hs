@@ -4,6 +4,7 @@ module Brick3D.Type (
   Position
   , Rotation
   , DCPosition
+  , SCPosition
   , Normal
   
   -- * Vertices
@@ -13,6 +14,9 @@ module Brick3D.Type (
   , dcv_position
   , zBuffer
   , fromVertex
+  , SCVertex(SCVertex)
+  , scv_position
+  , depth
 
   -- * Primitives
   , PrimitiveBase(..)
@@ -56,6 +60,15 @@ type Rotation = M33 Float
 -- 右に向かってX軸が伸びています。
 -- 値は-1~1の間の小数を取ります。
 type DCPosition = V2 Float
+-- | Position in Screen Coordinate
+--
+-- Screen Coordinate is a Coordinate that
+-- is associated with actuall "pixel" of
+-- the screen.
+-- In this case, as we use 'Tart.Canvas.Canvas'
+-- for screen, (0, 0) is set at the Top-Left
+-- corner.
+type SCPosition = V2 Int
 -- | Normal of some 3-Dimensional object
 type Normal   = V3 Float
 
@@ -72,6 +85,13 @@ data DCVertex = DCVertex { _dcv_position :: DCPosition
                          , _zBuffer :: Float
                          } deriving (Show, Eq, Ord)
 makeLenses ''DCVertex
+
+-- | A vertex on Screen Coordinate.
+data SCVertex = SCVertex { _scv_position :: SCPosition
+                         , _depth :: Float
+                         } deriving (Show, Eq, Ord)
+makeLenses ''SCVertex
+
 
 -- | Convert 'Vertex' to 'DCVertex'
 fromVertex :: Vertex -> DCVertex
