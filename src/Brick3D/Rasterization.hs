@@ -13,12 +13,12 @@ import Linear.V3 (_x, _y, _z)
 import Linear.Vector ((^*), (^+^))
 import Linear.Metric (dot, distance)
 
-  -- | Represents one Pixel
+-- | Represents one Pixel
 type PixelAttr = (Char, Attr)
 
 -- | Merge two 'Map' of Pixels into one by comparing zBuffer
 mergeAttr :: Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr) -> Map (Int, Int) (Float, PixelAttr)
-mergeAttr m1 m2 = (M.intersectionWith (\a1 a2 -> bool a2 a1 (a1^._1 >= a2^._1)) m1 m2)
+mergeAttr m1 m2 = M.intersectionWith (\a1 a2 -> bool a2 a1 (a1^._1 >= a2^._1)) m1 m2
                   <> m1 <> m2
 
 -- | Convert 'Map' to list so that 'canvasSetMany' can treat
@@ -79,8 +79,7 @@ rasterizeLine begin end = let begin' = begin^.scv_position
                               y x = round $ ((fromRational . toRational $ v^._y)
                                              /(fromRational . toRational $ v^._x :: Float))
                                     *fromIntegral x
-                          in fmap (\x -> begin&scv_position%~(+ V2 x (y x)))
-                             $ V.generate (end'^._x-begin'^._x) (fromInteger.toInteger)
+                          in (\x -> begin&scv_position%~(+ V2 x (y x))) <$> V.generate (end'^._x-begin'^._x) (fromInteger.toInteger)
 
 -- | Returns 'DCVertex's that constructs one filled-triangle
 --
