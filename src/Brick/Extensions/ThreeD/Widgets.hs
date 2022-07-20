@@ -17,8 +17,8 @@ threeD :: ThreeDState -> Widget n
 threeD = raw . canvasLayersToImage . pure . view screen
 
 
-handle3DEvent :: Event -> ThreeDState -> EventM n ThreeDState
-handle3DEvent e s = liftIO $ render (modifier s)
+handle3DEvent :: Event -> EventM n ThreeDState ()
+handle3DEvent e = get >>= liftIO . render . modifier >>= put
   where
     modifier :: ThreeDState -> ThreeDState
     modifier = case e of
