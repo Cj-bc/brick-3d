@@ -5,37 +5,33 @@
 
 packages:
 - completed:
+    name: tart
+    pantry-tree:
+      sha256: af9690d94ae9e652713a6136d1d6ee978c86412763930d5286bff1ba50ef6ffb
+      size: 3246
+    sha256: 826a72c59b4627050ae75b5dc6083423d6b317cad506b99477bec23b55607e2e
     size: 290876
     url: https://github.com/jtdaugherty/tart/archive/6d8b08e88ed72158874ec10ae8537913d23cda54.tar.gz
-    name: tart
     version: '0.3'
-    sha256: 826a72c59b4627050ae75b5dc6083423d6b317cad506b99477bec23b55607e2e
-    pantry-tree:
-      size: 3246
-      sha256: af9690d94ae9e652713a6136d1d6ee978c86412763930d5286bff1ba50ef6ffb
   original:
     url: https://github.com/jtdaugherty/tart/archive/6d8b08e88ed72158874ec10ae8537913d23cda54.tar.gz
-- completed:
-    size: 712954
-    url: https://github.com/jtdaugherty/brick/archive/293ba9ceba5eb6a8b8e6258b56868594f76e33c5.tar.gz
-    name: brick
-    version: '0.73'
-    sha256: 4abd4e9a19ea2ac6b2efc544208ba7e70eb7f5a4c5ea714f54fcc352aeef44d8
-    pantry-tree:
-      size: 7117
-      sha256: b6b1b91428929d871d36b357374981f60de77c37ff2b812e4a233855ac8ff2aa
-  original:
-    url: https://github.com/jtdaugherty/brick/archive/293ba9ceba5eb6a8b8e6258b56868594f76e33c5.tar.gz
 - completed:
     hackage: text-zipper-0.12@sha256:e96110598fc25e57a99ffcd8e583351af8b325b813aa5e3bd0adc627e3e02b6b,1472
     pantry-tree:
-      size: 604
       sha256: 51edf26c8f66b1356c820b183e6442f8245ec2aef450fde4cd56db566347daa0
+      size: 604
   original:
     hackage: text-zipper-0.12
+- completed:
+    hackage: brick-1.4@sha256:c262e7a86a8ddcf962cad9e5744f79f98b0dce940ea569c308587a4b5e403a2d,17826
+    pantry-tree:
+      sha256: b7e0f7c4662ff89dcf97966de2f3da52e4dd3b51ebaeba045484a145fd71c9f0
+      size: 6687
+  original:
+    hackage: brick-1.4@sha256:c262e7a86a8ddcf962cad9e5744f79f98b0dce940ea569c308587a4b5e403a2d,17826
 snapshots:
 - completed:
-    size: 585393
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/0.yaml
-    sha256: c632012da648385b9fa3c29f4e0afd56ead299f1c5528ee789058be410e883c0
-  original: lts-18.0
+    sha256: 93a107557e8691ed5ca17beaee41e68222b142c48868fc8c04a4181fb233477d
+    size: 587126
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/8.yaml
+  original: lts-18.8
