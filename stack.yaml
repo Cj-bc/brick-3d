@@ -44,6 +44,8 @@ packages:
 extra-deps:
   - github: jtdaugherty/tart
     commit: 6d8b08e88ed72158874ec10ae8537913d23cda54
+  - text-zipper-0.12
+  - brick-1.4@sha256:c262e7a86a8ddcf962cad9e5744f79f98b0dce940ea569c308587a4b5e403a2d,17826
 
 # - brick-0.64@sha256:f03fa14607c22cf48af99e24c44f79a0fb073f7ec229f15e969fed9ff73c93f6,16530
 # - linear-1.21.6@sha256:2e04555686cc082f8fc66a688bd73b6fb7cd446bd82d87f022df7875c4bafc31,4323

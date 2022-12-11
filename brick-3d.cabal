@@ -35,7 +35,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
-    , brick
+    , brick > 1
     , tart
     , vector
     , mtl

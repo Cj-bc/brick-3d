@@ -22,19 +22,15 @@ app :: App ThreeDState AppEvent AppName
 app = App { appDraw = \s -> [border $ threeD s]
           , appChooseCursor = neverShowCursor
           , appHandleEvent = eHandler
-          , appStartEvent = \s -> do
-              s' <- liftIO $ B3DR.render s
-              return s'
+          , appStartEvent = get >>= liftIO . B3DR.render >>= put
           , appAttrMap = const $ attrMap Vty.defAttr []
           }
             
-eHandler :: ThreeDState -> BrickEvent AppName AppEvent -> EventM AppName (Next ThreeDState)
-eHandler s (VtyEvent (Vty.EvKey (Vty.KEsc) [])) = halt s
-eHandler s (VtyEvent (Vty.EvKey (Vty.KChar 'r') [])) = do
-  s' <- liftIO $ B3DR.render s
-  continue s'
-eHandler s (VtyEvent e) = handle3DEvent e s >>= continue
-eHandler s _ = continue s
+eHandler :: BrickEvent AppName AppEvent -> EventM AppName ThreeDState ()
+eHandler (VtyEvent (Vty.EvKey (Vty.KEsc) [])) = halt
+eHandler (VtyEvent (Vty.EvKey (Vty.KChar 'r') [])) = get >>= liftIO . B3DR.render >>= put
+eHandler (VtyEvent e) = handle3DEvent e
+eHandler _ = pure ()
 
 main :: IO ()
 main = do
